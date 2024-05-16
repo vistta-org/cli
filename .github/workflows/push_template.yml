@@ -1,0 +1,12 @@
+name: Push Template
+run-name: ${{ gitea.actor }} is publishing Vistta.JS
+on:
+  push:
+    branches:
+      - master
+jobs:
+  template:
+    steps:
+      - name: Template
+        run: |
+          echo "On Push Template"         
