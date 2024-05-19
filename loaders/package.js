@@ -1,5 +1,5 @@
 import { fs } from "@vistta/fs";
-import { parsePackage } from "../utils.js";
+import { parseJsonFile } from "../utils.js";
 
 export async function load() {
   let result = {};
@@ -16,7 +16,7 @@ export async function load() {
   const entries = fs.glob("**/package.json");
   let entry = (await entries.next())?.value;
   while (entry) {
-    const pkg = await parsePackage(entry);
+    const pkg = await parseJsonFile(entry);
     if (entry === "package.json") result = pkg;
     if (pkg?.vistta)
       await transferProperties(vistta, pkg.vistta, fs.dirname(entry));

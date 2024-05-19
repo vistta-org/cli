@@ -11,12 +11,11 @@
     "tsconfig.json"
   ],
   "scripts": {
-    "setup": "npm link",
-    "setup:test": ""
+    "postinstall": ""
   },
   "repository": {
     "type": "git",
-    "url": "https://git.vistta.org/vistta/vistta.git"
+    "url": "https://git.vistta.org/vistta/cli.git"
   },
   "author": "Tiago Terenas Almeida",
   "license": "CC BY-NC-ND 4.0 DEED",
