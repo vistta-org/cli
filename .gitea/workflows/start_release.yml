@@ -21,6 +21,9 @@ jobs:
           fetch-depth: 0
           submodules: true
       - 
+        name: Setup Node
+        run: npm ci
+      - 
         name: "Start Release"
         uses: ./.gitea/actions/start-release
         with:
