@@ -47,5 +47,5 @@ jobs:
         name: Close Issue
         uses: ./.gitea/actions/close-issue
         with:
-          directory: ./packages/$module
+          working-directory: ./packages/$module
           token: ${{ secrets.GIT_TOKEN }}

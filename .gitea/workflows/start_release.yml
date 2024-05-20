@@ -4,6 +4,8 @@ on:
     types: [labeled]
     branches:    
       - master
+env:
+  module: cli
 jobs:
   Release:
     runs-on: ubuntu-latest
@@ -28,4 +30,5 @@ jobs:
         uses: ./.gitea/actions/start-release
         with:
           type: '${{ gitea.event.pull_request.labels[0].name }}'
+          working-directory: ./packages/$module
           token: ${{ secrets.GIT_TOKEN }}
