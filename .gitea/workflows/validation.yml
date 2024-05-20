@@ -29,23 +29,23 @@ jobs:
         run: npm ci
       - 
         name: Module Validation
-        working-directory: ./packages/$module
+        working-directory: ./packages/${{ env.module }}
         run: npx vistta outdated
       - 
         name: Eslint Validation
-        working-directory: ./packages/$module
+        working-directory: ./packages/${{ env.module }}
         run: npx eslint .
       - 
         name: Typescript Validation
-        working-directory: ./packages/$module
+        working-directory: ./packages/${{ env.module }}
         run: npx tsc
       - 
         name: Unit Tests
-        working-directory: ./packages/$module
+        working-directory: ./packages/${{ env.module }}
         run: npx vistta test
       - 
         name: Close Issue
         uses: ./.gitea/actions/close-issue
         with:
-          working-directory: ./packages/$module
+          working-directory: ./packages/${{ env.module }}
           token: ${{ secrets.GIT_TOKEN }}
