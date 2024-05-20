@@ -12,15 +12,18 @@ const CWD = process.cwd();
 const DEFAULT_EXTENSIONS = ["js", "mjs", "cjs"];
 const RECOGNIZABLE_EXTENSIONS = [
   ...DEFAULT_EXTENSIONS,
-  "jsx",
+  //  "jsx",
   "ts",
-  "tsx",
+  //  "tsx",
   "mts",
   "cts",
 ];
 const LOADERS = {
   "": {
     "": DEFAULT_LOADER,
+    "ts": "./typescript.js",
+    "mts": "./typescript.js",
+    "cts": "./typescript.js",
     json: "./json.js",
   },
   reader: {

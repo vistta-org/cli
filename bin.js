@@ -13,6 +13,7 @@ const env = await loadEnv(
   pkg?.name || "",
   pkg?.version || "",
 );
+env.MAIN = process.argv[2];
 const args = [];
 const execArgv = ["--import", root("register.js")];
 for (let i = 3, len = process.argv.length; i < len; i++) {
@@ -27,7 +28,7 @@ for (let i = 3, len = process.argv.length; i < len; i++) {
   else if (arg.startsWith("-")) args.push(execArgv);
   else args.push(arg);
 }
-fork(pkg?.vistta?.scripts?.[process.argv[2]] || process.argv[2], args, {
+fork(pkg.vistta.scripts?.[env.MAIN] || pkg.vistta.scripts.default, args, {
   env,
   execArgv,
   stdio: "inherit",

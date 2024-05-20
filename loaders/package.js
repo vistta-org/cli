@@ -10,6 +10,7 @@ export async function load() {
         fs.dirname(import.meta.url),
         "../scripts/outdated.js",
       ),
+      default: fs.resolve(fs.dirname(import.meta.url), "../scripts/default.js")
     },
     loaders: {},
   };
