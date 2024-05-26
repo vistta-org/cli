@@ -4,6 +4,7 @@ export async function load(vistta, packageName, packageVersion) {
   const env = vistta?.env || {};
   env.NODE_NO_WARNINGS = 0;
   env.VISTTA_LOADERS = JSON.stringify(vistta?.loaders || {});
+  env.VISTTA_DEFAULT_EXTENSIONS = JSON.stringify(vistta?.defaultExtensions || []);
   env.VISTTA_COMPILER_OPTIONS = JSON.stringify(vistta?.compilerOptions || {});
   env.VISTTA_BUNDLER_OPTIONS = JSON.stringify(vistta?.bundlerOptions || {});
   env.PACKAGE_NAME = packageName;

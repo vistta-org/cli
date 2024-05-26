@@ -13,6 +13,7 @@ export async function load() {
       default: fs.resolve(fs.dirname(import.meta.url), "../scripts/default.js")
     },
     loaders: {},
+    defaultExtensions: [],
   };
   const entries = fs.glob("**/package.json");
   let entry = (await entries.next())?.value;
@@ -43,21 +44,26 @@ async function transferProperties(target, props, dirname) {
       }
     } else if (dirname && key === "loaders") {
       for (let n = 0, nLen = cur?.length || 0; n < nLen; n++) {
-        const { extensions, type = "", script } = cur[n];
+        const { extensions, type = "", script, default: addDefault } = cur[n];
         if (!target.loaders[type]) target.loaders[type] = {};
-        if (typeof extensions === "string")
+        if (typeof extensions === "string") {
           target.loaders[type][extensions] = fs.isAbsolute(script)
             ? script
             : fs.resolve(dirname, script);
-        else
+          if (addDefault) target.defaultExtensions.push(extensions);
+        }
+        else {
           for (
             let e = 0, extensionsLen = extensions?.length || 0;
             e < extensionsLen;
             e++
-          )
+          ) {
             target.loaders[type][extensions[e]] = fs.isAbsolute(script)
               ? script
               : fs.resolve(dirname, script);
+            if (addDefault) target.defaultExtensions.push(extensions[e]);
+          }
+        }
       }
     } else if (typeof cur === "object") {
       if (Array.isArray(cur) && Array.isArray(target[key]))

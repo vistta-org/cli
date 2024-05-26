@@ -1,4 +1,3 @@
-import { Console } from "@vistta/console";
 import { fs } from "@vistta/fs";
 import { run } from "node:test";
 
@@ -53,10 +52,10 @@ function report(nesting, name, status, duration, error) {
   let message = "";
   if (nesting === 0) message += status === "start" ? "┌" : "└";
   else message += "├" + "─".repeat(nesting);
-  if (status === "fail") (message += Console.red), (results.code = 1);
-  if (status === "pass") message += Console.green;
+  if (status === "fail") (message += console.red), (results.code = 1);
+  if (status === "pass") message += console.green;
   message += " " + name;
-  if (duration) message += ` ${Console.reset + Console.dim}(${duration} ms)`;
+  if (duration) message += ` ${console.reset + console.dim}(${duration} ms)`;
   if (error) results.errors.push(error);
   if (nesting === 0 && status !== "start") message += "\n";
   return system.log(message);

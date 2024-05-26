@@ -9,9 +9,9 @@ import {
 import { initialize as initializeBundler } from "./bundler.js";
 
 const CWD = process.cwd();
-const DEFAULT_EXTENSIONS = ["js", "mjs", "cjs"];
-const RECOGNIZABLE_EXTENSIONS = [
-  ...DEFAULT_EXTENSIONS,
+const JS_EXTENSIONS = ["js", "mjs", "cjs"];
+const DEFAULT_EXTENSIONS = [
+  ...JS_EXTENSIONS,
   //  "jsx",
   "ts",
   //  "tsx",
@@ -38,6 +38,7 @@ export async function initialize({
   loaders = {},
   compilerOptions = {},
   bundlerOptions = {},
+  defaultExtensions = [],
 }) {
   await initializeTypescript(compilerOptions);
   await initializeBundler(bundlerOptions);
@@ -47,6 +48,7 @@ export async function initialize({
     if (LOADERS[keys[i]]) Object.assign(LOADERS[key], loaders[key]);
     else LOADERS[key] = loaders[key];
   }
+  DEFAULT_EXTENSIONS.push(...defaultExtensions);
 }
 
 export async function resolve(specifier, context, nextResolve, options) {
@@ -113,9 +115,8 @@ export async function load(url, context, nextLoad) {
 
 function resolver(
   specifier,
-  { cwd = process.cwd(), extensions = RECOGNIZABLE_EXTENSIONS } = {},
+  { cwd = process.cwd(), extensions = DEFAULT_EXTENSIONS } = {},
 ) {
-  const fallback = "" + specifier;
   if (!fs.isAbsolute(specifier))
     specifier = fs.resolve(
       cwd?.startsWith("file://") ? fs.dirname(cwd) : cwd,
@@ -132,11 +133,11 @@ function resolver(
     const cur = specifier + `.${extensions[i]}`;
     if (fs.existsSync(cur)) return cur;
   }
-  return fallback;
+  return specifier;
 }
 
 async function findLoader(extension, type = "") {
-  if (type === "" && DEFAULT_EXTENSIONS.includes(extension)) return null;
+  if (type === "" && JS_EXTENSIONS.includes(extension)) return null;
   const loader = LOADERS[type]?.[extension];
   if (!loader) {
     if (extension === "")
