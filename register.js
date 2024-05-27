@@ -22,4 +22,3 @@ if (process.env.NODE_ENV === "test") await exposeTestFunctions();
 system.announce(
   `Vistta CLI v${(await import("./package.json"))?.default?.version}`,
 );
-system.log(process.env.MAIN, process.env.NODE_ENV);
