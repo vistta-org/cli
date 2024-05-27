@@ -5,8 +5,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { load as loadEnv } from "./loaders/env.js";
 import { load as loadPackage } from "./loaders/package.js";
 import { fork } from "node:child_process";
+import { disableExperimentalWarnings } from "./utils.js";
 
-await disableExperimentalWarnings();
+disableExperimentalWarnings();
 const pkg = await loadPackage();
 const env = await loadEnv(
   pkg?.vistta || {},
@@ -28,6 +29,7 @@ for (let i = 3, len = process.argv.length; i < len; i++) {
   else if (arg.startsWith("-")) args.push(execArgv);
   else args.push(arg);
 }
+if (env.MAIN === "test") env.NODE_ENV = "test";
 fork(pkg.vistta.scripts?.[env.MAIN] || pkg.vistta.scripts.default, args, {
   env,
   execArgv,
@@ -38,18 +40,4 @@ function root(filepath) {
   return pathToFileURL(
     resolve(dirname(fileURLToPath(import.meta.url)), filepath),
   );
-}
-
-async function disableExperimentalWarnings() {
-  const emit = process.emit;
-  process.emit = (name, data) => {
-    if (
-      name === `warning` &&
-      typeof data === `object` &&
-      data.name === `ExperimentalWarning`
-    ) {
-      return false;
-    }
-    return emit.apply(process, arguments);
-  };
 }

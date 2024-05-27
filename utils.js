@@ -44,6 +44,39 @@ export async function outdated() {
   return result;
 }
 
+export function disableExperimentalWarnings() {
+  const emit = process.emit;
+  process.emit = (name, data) => {
+    if (
+      name === `warning` &&
+      typeof data === `object` &&
+      data.name === `ExperimentalWarning`
+    ) {
+      return false;
+    }
+    return emit.apply(process, arguments);
+  };
+}
+
+export async function exposeTestFunctions() {
+  const { describe, it, suite, test, after, afterEach, before, beforeEach } = await import("node:test");
+
+  describe.after = after;
+  suite.after = after;
+  describe.afterEach = afterEach;
+  suite.afterEach = afterEach;
+  describe.before = before;
+  suite.before = before;
+  describe.beforeEach = beforeEach;
+  suite.beforeEach = beforeEach;
+
+  global.describe = describe;
+  global.it = it;
+  global.suite = suite;
+  global.test = test;
+  global.assert = await import("node:assert");
+}
+
 export function exit(error) {
   if (error) system.error(error);
   process.exit(error ? 1 : 0);
