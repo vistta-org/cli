@@ -1,4 +1,4 @@
-import { fs } from "@vistta/fs";
+import fs from "@vistta/fs";
 import { run } from "node:test";
 
 const files = [];

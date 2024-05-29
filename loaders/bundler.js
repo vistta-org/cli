@@ -1,4 +1,4 @@
-import { fs } from "@vistta/fs";
+import fs from "@vistta/fs";
 import { build } from "esbuild";
 import { dirname, basename } from "node:path";
 import { pathToFileURL } from "node:url";

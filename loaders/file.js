@@ -1,4 +1,4 @@
-import { fs } from "@vistta/fs";
+import fs from "@vistta/fs";
 
 export async function load(_, { path, type, encoding }) {
   const urlHash = fs.fileId(path) + fs.extname(path);

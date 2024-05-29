@@ -1,4 +1,4 @@
-import { fs } from "@vistta/fs";
+import fs from "@vistta/fs";
 import { satisfies } from "semver";
 
 export async function parseJsonFile(path) {

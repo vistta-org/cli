@@ -1,4 +1,4 @@
-import { fs } from "@vistta/fs";
+import fs from "@vistta/fs";
 import { transform } from "esbuild";
 
 export const tsconfig = { compilerOptions: {} };

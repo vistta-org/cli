@@ -1,4 +1,4 @@
-import { fs } from "@vistta/fs";
+import fs from "@vistta/fs";
 import { parseJsonFile } from "../utils.js";
 
 export async function load() {

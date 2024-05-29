@@ -1,4 +1,4 @@
-import { fs } from "@vistta/fs";
+import fs from "@vistta/fs";
 
 export async function load(vistta, packageName, packageVersion) {
   const env = vistta?.env || {};
