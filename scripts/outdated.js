@@ -10,5 +10,5 @@ for (let i = 0, len = modules.length; i < len; i++) {
     system.info(`Module "${name}" has a new version (${latest})`);
   else system.warn(`Module "${name}" is outdated (${latest})`), (valid = false);
 }
-system.log("Everything is up to date");
+if (modules.length == 0) system.log("Everything is up to date");
 process.exit(valid ? 0 : 1);
