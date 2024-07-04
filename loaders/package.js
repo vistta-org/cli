@@ -1,5 +1,5 @@
 import fs from "@vistta/fs";
-import { parseJsonFile } from "../utils.js";
+import { readJSONFile } from "../utils.js";
 
 export async function load() {
   let result = {};
@@ -18,7 +18,7 @@ export async function load() {
   const entries = fs.glob("**/package.json");
   let entry = (await entries.next())?.value;
   while (entry) {
-    const pkg = await parseJsonFile(entry);
+    const pkg = await readJSONFile(entry);
     if (entry === "package.json") result = pkg;
     if (pkg?.vistta)
       await transferProperties(vistta, pkg.vistta, fs.dirname(entry));
@@ -43,28 +43,8 @@ async function transferProperties(target, props, dirname) {
           target.scripts[script] = fs.resolve(dirname, cur[script]);
       }
     } else if (dirname && key === "loaders") {
-      for (let n = 0, nLen = cur?.length || 0; n < nLen; n++) {
-        const { extensions, type = "", script, default: addDefault } = cur[n];
-        if (!target.loaders[type]) target.loaders[type] = {};
-        if (typeof extensions === "string") {
-          target.loaders[type][extensions] = fs.isAbsolute(script)
-            ? script
-            : fs.resolve(dirname, script);
-          if (addDefault) target.defaultExtensions.push(extensions);
-        }
-        else {
-          for (
-            let e = 0, extensionsLen = extensions?.length || 0;
-            e < extensionsLen;
-            e++
-          ) {
-            target.loaders[type][extensions[e]] = fs.isAbsolute(script)
-              ? script
-              : fs.resolve(dirname, script);
-            if (addDefault) target.defaultExtensions.push(extensions[e]);
-          }
-        }
-      }
+      for (let n = 0, nLen = cur?.length || 0; n < nLen; n++)
+        addLoader(target, dirname, cur[n]);
     } else if (typeof cur === "object") {
       if (Array.isArray(cur) && Array.isArray(target[key]))
         target[key].push(...cur);
@@ -73,4 +53,29 @@ async function transferProperties(target, props, dirname) {
       else target[key] = cur;
     } else target[key] = cur;
   }
+}
+
+function addLoader(target, dirname, loader) {
+  const script = loader.script;
+  if (typeof script !== "string") return;
+  const types = extractValues(loader?.type, loader?.types);
+  const extensions = extractValues(loader?.extension, loader?.extensions);
+  const addDefault = loader.default;
+  for (let i = 0, typesLen = types.length; i < typesLen; i++) {
+    const type = types[i];
+    if (!target.loaders[type]) target.loaders[type] = {};
+    for (let j = 0, extensionsLen = extensions.length; j < extensionsLen; j++) {
+      const extension = extensions[j];
+      target.loaders[type][extension] = fs.isAbsolute(script)
+        ? script
+        : fs.resolve(dirname, script);
+      if (addDefault) target.defaultExtensions.push(extension);
+    }
+  }
+}
+
+function extractValues(single, multiple) {
+  if (typeof single === "string") return [single];
+  if (Array.isArray(multiple)) return multiple;
+  return ["default"];
 }

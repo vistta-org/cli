@@ -12,25 +12,23 @@ const CWD = process.cwd();
 const JS_EXTENSIONS = ["js", "mjs", "cjs"];
 const DEFAULT_EXTENSIONS = [
   ...JS_EXTENSIONS,
-  //  "jsx",
   "ts",
-  //  "tsx",
   "mts",
   "cts",
 ];
 const LOADERS = {
-  "": {
-    "": DEFAULT_LOADER,
-    "ts": "./typescript.js",
-    "mts": "./typescript.js",
-    "cts": "./typescript.js",
+  default: {
+    default: DEFAULT_LOADER,
+    ts: "./typescript.js",
+    mts: "./typescript.js",
+    cts: "./typescript.js",
     json: "./json.js",
   },
   reader: {
-    "": DEFAULT_LOADER,
+    default: DEFAULT_LOADER,
   },
   bundler: {
-    "": "./bundler.js",
+    default: "./bundler.js",
   },
 };
 
@@ -136,15 +134,15 @@ function resolver(
   return specifier;
 }
 
-async function findLoader(extension, type = "") {
-  if (type === "" && JS_EXTENSIONS.includes(extension)) return null;
+async function findLoader(extension, type = "default") {
+  if (type === "default" && JS_EXTENSIONS.includes(extension)) return null;
   const loader = LOADERS[type]?.[extension];
   if (!loader) {
-    if (extension === "")
+    if (extension === "default")
       throw new Error(
         `TypeError: Import attribute "type" with value "${type}" is not supported`,
       );
-    else return await findLoader("", type);
+    else return await findLoader("default", type);
   }
   if (typeof loader === "string")
     LOADERS[type][extension] = (await import(loader))?.load;

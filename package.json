@@ -25,7 +25,7 @@
   "dependencies": {
     "@vistta/console": "*",
     "@vistta/fs": "*",
-    "esbuild": "^0.21.4",
+    "esbuild": "^0.23.0",
     "semver": "^7.6.0"
   }
 }
