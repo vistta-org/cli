@@ -5,9 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { load as loadEnv } from "./loaders/env.js";
 import { load as loadPackage } from "./loaders/package.js";
 import { fork } from "node:child_process";
-import { disableExperimentalWarnings } from "./utils.js";
 
-disableExperimentalWarnings();
 const pkg = await loadPackage();
 const env = await loadEnv(
   pkg?.vistta || {},

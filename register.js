@@ -1,8 +1,7 @@
 import "@vistta/console";
 import { register } from "node:module";
-import { outdated, disableExperimentalWarnings, exposeTestFunctions } from "./utils.js";
+import { outdated, exposeTestFunctions } from "./utils.js";
 
-disableExperimentalWarnings();
 const vistta = {
   loaders: JSON.parse(process.env.VISTTA_LOADERS),
   compilerOptions: JSON.parse(process.env.VISTTA_COMPILER_OPTIONS),

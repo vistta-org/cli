@@ -19,18 +19,7 @@ export async function writeJSONFile(path, json) {
 
 export async function outdated() {
   if (!fs.existsSync("package.json")) throw new Error("No Package found.");
-  let path = process.cwd();
-  let packages;
-  while (!packages) {
-    if (fs.existsSync(path + "/node_modules/.package-lock.json"))
-      packages = (await readJSONFile(path + "/node_modules/.package-lock.json"))?.packages || {};
-    else {
-      let previous = path;
-      path = fs.resolve(path, "..");
-      if (previous === path) throw new Error("No Package Lock found.");
-    }
-  }
-
+  const packages = await getProjectPackages();
   const data = {};
   const promises = [];
   const loadData = (packagePath, dependencies = {}, dev) => {
@@ -77,18 +66,20 @@ export async function outdated() {
   return result;
 }
 
-export function disableExperimentalWarnings() {
-  const emit = process.emit;
-  process.emit = (name, data) => {
-    if (
-      name === `warning` &&
-      typeof data === `object` &&
-      data.name === `ExperimentalWarning`
-    ) {
-      return false;
-    }
-    return emit.apply(process, arguments);
-  };
+export async function getProjectPackage(path = process.cwd()) {
+  if (fs.existsSync(path + "/package.json"))
+    return (await readJSONFile(path + "/package.json"));
+  let newPath = fs.resolve(path, "..");
+  if (newPath === path) throw new Error("No Package found.");
+  return await getProjectPackage(newPath);
+}
+
+export async function getProjectPackages(path = process.cwd()) {
+  if (fs.existsSync(path + "/node_modules/.package-lock.json"))
+    return (await readJSONFile(path + "/node_modules/.package-lock.json"))?.packages || {};
+  let newPath = fs.resolve(path, "..");
+  if (newPath === path) throw new Error("No Package Lock found.");
+  return await getProjectPackages(newPath);
 }
 
 export async function exposeTestFunctions() {
