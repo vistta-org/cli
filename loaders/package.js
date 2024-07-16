@@ -1,5 +1,5 @@
 import fs from "@vistta/fs";
-import { readJSONFile, getProjectPackage, getProjectPackages } from "../utils.js";
+import { readJSONFile, getProjectRootFolderAndPackage, getProjectPackages } from "../utils.js";
 
 export async function load() {
   const vistta = {
@@ -14,14 +14,14 @@ export async function load() {
     loaders: {},
     defaultExtensions: [],
   };
-  const result = await getProjectPackage();
+  const [cwd, result] = await getProjectRootFolderAndPackage();
   const packages = Object.keys(await getProjectPackages());
+  await transferProperties(vistta, result.vistta, cwd);
   for (let i = 0, len = packages.length; i < len; i++) {
     const pkg = await readJSONFile(packages[i] + "/package.json");
     if (pkg?.vistta)
       await transferProperties(vistta, pkg.vistta, packages[i]);
   }
-
   result.vistta = vistta;
   return result;
 }

@@ -66,12 +66,12 @@ export async function outdated() {
   return result;
 }
 
-export async function getProjectPackage(path = process.cwd()) {
+export async function getProjectRootFolderAndPackage(path = process.cwd()) {
   if (fs.existsSync(path + "/package.json"))
-    return (await readJSONFile(path + "/package.json"));
+    return [path, (await readJSONFile(path + "/package.json"))];
   let newPath = fs.resolve(path, "..");
   if (newPath === path) throw new Error("No Package found.");
-  return await getProjectPackage(newPath);
+  return await getProjectRootFolderAndPackage(newPath);
 }
 
 export async function getProjectPackages(path = process.cwd()) {
