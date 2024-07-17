@@ -26,6 +26,6 @@
     "@vistta/console": "*",
     "@vistta/fs": "*",
     "esbuild": "^0.23.0",
-    "semver": "^7.6.0"
+    "semver": "^7.6.3"
   }
 }
