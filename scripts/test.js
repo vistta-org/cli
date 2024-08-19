@@ -14,15 +14,24 @@ run({ files, watch: process.env.NODE_WATCH })
     if (nesting !== 0 || files.indexOf(name) != -1) return;
     report(nesting, name, "start");
   })
-  .on("test:fail", ({ name, nesting, details: { duration_ms, error, ...rest } }) =>
-    (report(nesting, name, "fail", duration_ms, error), system.error(error, rest)),
+  .on("test:fail", ({ name, nesting, details: { duration_ms, error } }) =>
+    report(nesting, name, "fail", duration_ms, error),
   )
   .on("test:pass", ({ name, nesting, details: { duration_ms } }) =>
     report(nesting, name, "pass", duration_ms),
   )
   .on(
     "test:diagnostic",
-    ({ message }) => system.log("here"),
+    ({ message }) => !message.startsWith("duration_ms") && diagnostic(message),
+  )
+  .on("test:stderr", ({ message }) =>
+    process.env.NODE_DEBUG
+      ? console.error(message)
+      : results.stderr.push(message),
+  )
+  .on(
+    "test:stdout",
+    ({ message }) => process.env.NODE_DEBUG && console.debug(message),
   )
   .on("test:coverage", (...args) => console.debug("test:coverage", ...args));
 
