@@ -3,6 +3,10 @@ import { outdated, readJSONFile, writeJSONFile } from "../utils.js";
 const USE_SHELL = (await import("node:os")).platform() === "win32";
 
 const command = process.argv[2] || "";
+if (!(command === "outdated" || command === "patch" || command === "update")) {
+  system.log("Usage: vistta package [outdated|patch|update]");
+  process.exit(0);
+}
 
 const modules = await outdated();
 let valid = true;

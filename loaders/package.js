@@ -5,9 +5,9 @@ export async function load() {
   const vistta = {
     scripts: {
       test: fs.resolve(fs.dirname(import.meta.url), "../scripts/test.js"),
-      outdated: fs.resolve(
+      package: fs.resolve(
         fs.dirname(import.meta.url),
-        "../scripts/outdated.js",
+        "../scripts/package.js",
       ),
       default: fs.resolve(fs.dirname(import.meta.url), "../scripts/default.js")
     },
@@ -74,6 +74,7 @@ function addLoader(target, dirname, loader) {
 
 function extractValues(single, multiple) {
   if (typeof single === "string") return [single];
+  if (typeof multiple === "string") return multiple.split(",");
   if (Array.isArray(multiple)) return multiple;
   return ["default"];
 }

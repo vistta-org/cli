@@ -24,9 +24,6 @@ const LOADERS = {
     cts: "./typescript.js",
     json: "./json.js",
   },
-  reader: {
-    default: DEFAULT_LOADER,
-  },
   bundler: {
     default: "./bundler.js",
   },
