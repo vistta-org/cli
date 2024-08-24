@@ -3,6 +3,17 @@
   "version": "0.1.0",
   "description": "Vistta CLI (NodeJS Loaders Adapter)",
   "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./default": "./cli/default.js",
+    "./packages": "./cli/packages.js",
+    "./test": "./cli/test.js",
+    "./loaders/bundler": "./loaders/bundler.js",
+    "./loaders/file": "./loaders/file.js",
+    "./loaders/json": "./loaders/json.js",
+    "./loaders/typescript": "./loaders/typescript.js"
+  },
   "bin": {
     "vistta": "./bin.js"
   },
