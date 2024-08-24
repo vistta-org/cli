@@ -4,20 +4,28 @@
 
 ## **Getting Started**
 
-- 
+### **Install**
 
-## **Usage**
+```sh
+npm install @vistta/
+```
 
-- 
+### **Usage**
 
-## **Features**
+Usage
 
-- 
+## **API**
+
+API
 
 ## **License**
 
-- 
+Attribution-NonCommercial-NoDerivatives 4.0 International
 
 ## **Contributing**
 
-If you'd like to contribute to this library, please fork the repository and submit a pull request with your changes. We appreciate any feedback or suggestions!
+Thank you for your interest in contributing to this project! Please ensure that any contributions respect the licensing terms specified. If you encounter any issues or have suggestions, feel free to report them. All issues will be well received and addressed to the best of our ability. We appreciate your support and contributions!
+
+### **Authors**
+
+- [Tiago Terenas Almeida](https://github.com/tiagomta)

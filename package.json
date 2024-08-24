@@ -1,0 +1,31 @@
+{
+  "name": "@vistta/cli",
+  "version": "0.1.0",
+  "description": "Vistta CLI (NodeJS Loaders Adapter)",
+  "type": "module",
+  "bin": {
+    "vistta": "./bin.js"
+  },
+  "files": [
+    "LICENSE",
+    "tsconfig.json"
+  ],
+  "scripts": {
+    "postinstall": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.vistta.org/vistta/cli.git"
+  },
+  "author": "Tiago Terenas Almeida",
+  "license": "CC BY-NC-ND 4.0 DEED",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@vistta/console": "*",
+    "@vistta/fs": "*",
+    "esbuild": "^0.23.0",
+    "semver": "^7.6.3"
+  }
+}
