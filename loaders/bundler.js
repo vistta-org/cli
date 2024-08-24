@@ -58,7 +58,9 @@ class Bundler {
         },
       ],
     });
-    const { outputFiles } = await build(this.options);
+    const { outputFiles, errors, warnings } = await build(this.options);
+    this.errors = errors;
+    this.warnings = warnings;
     this.code = outputFiles?.[0]?.text || "";
     this.files = Array.from(new Set(this.files));
     return this;
@@ -121,9 +123,13 @@ export async function initialize(bundlerOptions) {
 
 export async function load(_, { path, ...options }) {
   if (!bundler) bundler = new Bundler(this);
-  const { code, files, resources } = await bundler.run(path, options);
+  const { code, files, resources, errors, warnings } = await bundler.run(path, options);
   return {
-    code: `export const code = ${JSON.stringify(code)}; export const files = ${JSON.stringify(files)}; export const resources = ${JSON.stringify(resources)}`,
+    code: `export const code = ${JSON.stringify(code)}; ` +
+      `export const files = ${JSON.stringify(files)}; ` +
+      `export const resources = ${JSON.stringify(resources)}; ` +
+      `export const errors = ${JSON.stringify(errors)}; ` +
+      `export const warnings = ${JSON.stringify(warnings)};`,
     resources: resources,
   };
 }

@@ -1,20 +1,26 @@
 #!/usr/bin/env node
 "use strict";
-import { dirname, resolve } from "path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import { load as loadEnv } from "./loaders/env.js";
-import { load as loadPackage } from "./loaders/package.js";
+import { fs, importEnv, importJSON } from "./utils.js";
+import { pathToFileURL } from "node:url";
 import { fork } from "node:child_process";
 
-const pkg = await loadPackage();
-const env = await loadEnv(
-  pkg?.vistta || {},
-  pkg?.name || "",
-  pkg?.version || "",
-);
-env.MAIN = process.argv[2];
-const args = [];
-const execArgv = ["--import", root("register.js")];
+const dirname = fs.dirname(import.meta.url);
+const cwd = process.cwd();
+const rootPackage = await importJSON(fs.resolve(dirname, "package.json"));
+const projectPackage = await importJSON(fs.resolve(cwd, "package.json"));
+const env = {
+  ...(await importEnv(fs.resolve(cwd, ".env"))),
+  ...(projectPackage?.env || {}),
+};
+env.CLI_VERSION = rootPackage.version;
+env.PROJECT_NAME = projectPackage.name;
+env.PROJECT_VERSION = projectPackage.version;
+if (!process.argv[2]) console.log("vistta <command/script>"), process.exit();
+const args = [process.argv[2]];
+const execArgv = [
+  "--import",
+  pathToFileURL(fs.resolve(dirname, "register.js")),
+];
 for (let i = 3, len = process.argv.length; i < len; i++) {
   const arg = process.argv[i].toLowerCase();
   if (arg === "-d" || arg === "--dev") env.NODE_ENV = "development";
@@ -27,15 +33,9 @@ for (let i = 3, len = process.argv.length; i < len; i++) {
   else if (arg.startsWith("-")) args.push(execArgv);
   else args.push(arg);
 }
-if (env.MAIN === "test") env.NODE_ENV = "test";
-fork(pkg.vistta.scripts?.[env.MAIN] || pkg.vistta.scripts.default, args, {
+if (!env.NODE_DEBUG) execArgv.unshift("--no-warnings");
+fork(fs.resolve(dirname, "process.js"), args, {
   env,
   execArgv,
   stdio: "inherit",
 }).on("exit", (code) => process.exit(code));
-
-function root(filepath) {
-  return pathToFileURL(
-    resolve(dirname(fileURLToPath(import.meta.url)), filepath),
-  );
-}

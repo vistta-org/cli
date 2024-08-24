@@ -1,7 +1,6 @@
 import fs from "@vistta/fs";
 import { isBuiltin } from "node:module";
 import { fileURLToPath, pathToFileURL, URLSearchParams } from "node:url";
-import { load as DEFAULT_LOADER } from "./file.js";
 import {
   initialize as initializeTypescript,
   resolve as typescriptResolve,
@@ -9,41 +8,13 @@ import {
 import { initialize as initializeBundler } from "./bundler.js";
 
 const CWD = process.cwd();
-const JS_EXTENSIONS = ["js", "mjs", "cjs"];
-const DEFAULT_EXTENSIONS = [
-  ...JS_EXTENSIONS,
-  "ts",
-  "mts",
-  "cts",
-];
-const LOADERS = {
-  default: {
-    default: DEFAULT_LOADER,
-    ts: "./typescript.js",
-    mts: "./typescript.js",
-    cts: "./typescript.js",
-    json: "./json.js",
-  },
-  bundler: {
-    default: "./bundler.js",
-  },
-};
+const FALLBACK = "*";
+let instance;
 
-export async function initialize({
-  loaders = {},
-  compilerOptions = {},
-  bundlerOptions = {},
-  defaultExtensions = [],
-}) {
-  await initializeTypescript(compilerOptions);
-  await initializeBundler(bundlerOptions);
-  const keys = Object.keys(loaders);
-  for (let i = 0, len = keys.length; i < len; i++) {
-    const key = keys[i];
-    if (LOADERS[keys[i]]) Object.assign(LOADERS[key], loaders[key]);
-    else LOADERS[key] = loaders[key];
-  }
-  DEFAULT_EXTENSIONS.push(...defaultExtensions);
+export async function initialize({ loaders, resolve, options }) {
+  await initializeTypescript(options?.compiler || {});
+  await initializeBundler(options?.bundler || {});
+  instance = { loaders, resolve };
 }
 
 export async function resolve(specifier, context, nextResolve, options) {
@@ -80,7 +51,7 @@ export async function load(url, context, nextLoad) {
     : url.split("?")[0];
   const path = fileURLToPath(url);
   const extension = fs.extname(url).slice(1);
-  const loader = await findLoader(extension, options.type);
+  const loader = await getLoader(extension, options.type);
   if (!loader) return nextLoad(url, context);
   options.path = path;
   options.extension = fs.extname(url).slice(1);
@@ -110,7 +81,7 @@ export async function load(url, context, nextLoad) {
 
 function resolver(
   specifier,
-  { cwd = process.cwd(), extensions = DEFAULT_EXTENSIONS } = {},
+  { cwd = process.cwd(), extensions = instance.resolve } = {},
 ) {
   if (!fs.isAbsolute(specifier))
     specifier = fs.resolve(
@@ -131,17 +102,16 @@ function resolver(
   return specifier;
 }
 
-async function findLoader(extension, type = "default") {
-  if (type === "default" && JS_EXTENSIONS.includes(extension)) return null;
-  const loader = LOADERS[type]?.[extension];
+async function getLoader(extension, type = FALLBACK) {
+  if (type === FALLBACK && ["js", "mjs", "cjs"].includes(extension)) return null;
+  const loader = instance.loaders[type]?.[extension];
   if (!loader) {
-    if (extension === "default")
-      throw new Error(
-        `TypeError: Import attribute "type" with value "${type}" is not supported`,
+    if (extension === FALLBACK)
+      throw new TypeError(
+        `Import attribute "type" with value "${type}" is not supported`,
       );
-    else return await findLoader("default", type);
+    else return await getLoader(FALLBACK, type);
   }
-  if (typeof loader === "string")
-    LOADERS[type][extension] = (await import(loader))?.load;
-  return LOADERS[type]?.[extension];
+  if (typeof loader === "string") instance.loaders[type][extension] = (await import(loader))?.load;
+  return instance.loaders[type]?.[extension];
 }
