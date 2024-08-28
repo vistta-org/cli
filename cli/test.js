@@ -17,7 +17,6 @@ export default class extends DefaultCLI {
   }
 
   async main(_, pattern = "**/*.test.js") {
-    if (!process.env.NODE_DEBUG) console.disable();
     const entries = fs.glob(fs.resolve(process.cwd(), pattern));
     let entry = (await entries.next())?.value;
     while (entry) {
