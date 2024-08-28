@@ -8,15 +8,15 @@ const dirname = fs.dirname(import.meta.url);
 const cwd = process.cwd();
 const rootPackage = await importJSON(fs.resolve(dirname, "package.json"));
 const projectPackage = await importJSON(fs.resolve(cwd, "package.json"));
-const env = {
-  ...(await importEnv(fs.resolve(cwd, ".env"))),
-  ...(projectPackage?.env || {}),
-};
+const env = await importEnv(fs.resolve(cwd, ".env"));
+const projectEnvKeys = Object.keys(projectPackage?.env || {});
+for (let i = 0, len = projectEnvKeys.length; i < len; i++)
+  env[projectEnvKeys[i]] = projectPackage.env[projectEnvKeys[i]];
 env.CLI_VERSION = rootPackage.version;
 env.PROJECT_NAME = projectPackage.name;
 env.PROJECT_VERSION = projectPackage.version;
 if (!process.argv[2]) console.log("vistta <command/script>"), process.exit();
-const args = [process.argv[2]];
+const argv = [process.argv[2]];
 const execArgv = [
   "--import",
   pathToFileURL(fs.resolve(dirname, "register.js")),
@@ -30,11 +30,11 @@ for (let i = 3, len = process.argv.length; i < len; i++) {
   } else if (arg === "-t" || arg === "--trace") env.NODE_TRACE = true;
   else if (arg === "--debug") env.NODE_DEBUG = true;
   else if (arg === "--ci") env.CI = true;
-  else if (arg.startsWith("-")) args.push(execArgv);
-  else args.push(arg);
+  else if (arg.startsWith("-")) argv.push(execArgv);
+  else argv.push(arg);
 }
 if (!env.NODE_DEBUG) execArgv.unshift("--no-warnings");
-fork(fs.resolve(dirname, "process.js"), args, {
+fork(fs.resolve(dirname, "main.js"), argv, {
   env,
   execArgv,
   stdio: "inherit",

@@ -33,6 +33,10 @@ class CLI {
       this.#loaders[type][extensions[i]] = path;
     }
   }
+
+  define(key, value) {
+    global[key] = value;
+  }
 };
 
 export { CLI };

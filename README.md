@@ -18,6 +18,12 @@ Usage
 
 API
 
+### benchmark
+
+CLI Performance Average:
+Vanilla NodeJS: 50.05ms
+Vistta: 265.94ms
+
 ## **License**
 
 Attribution-NonCommercial-NoDerivatives 4.0 International

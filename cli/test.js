@@ -1,67 +1,107 @@
-/*
+import { default as DefaultCLI } from "./default.js";
+import assert from 'node:assert';
 import fs from "@vistta/fs";
-import { run, describe, it, suite, test, after, afterEach, before, beforeEach } from "node:test";
-import assert from "node:assert";
 
-describe.after = after;
-suite.after = after;
-describe.afterEach = afterEach;
-suite.afterEach = afterEach;
-describe.before = before;
-suite.before = before;
-describe.beforeEach = beforeEach;
-suite.beforeEach = beforeEach;
+export default class extends DefaultCLI {
+  #suite;
+  #results = [];
+  #failed;
 
-global.describe = describe;
-global.it = it;
-global.suite = suite;
-global.test = test;
-global.assert = assert;
+  constructor(options) {
+    super(options);
+    this.define("suite", this.suite.bind(this));
+    this.define("describe", this.suite.bind(this));
+    this.define("test", this.test.bind(this));
+    this.define("it", this.test.bind(this));
+    this.define("assert", assert);
+  }
 
-run({ globPatterns: "", watch: process.env.NODE_WATCH })
-  .on("test:enqueue", ({ name, nesting }) => {
-    console.log(name, nesting);
-  })
+  async main(_, pattern = "**/*.test.js") {
+    if (!process.env.NODE_DEBUG) console.disable();
+    const entries = fs.glob(fs.resolve(process.cwd(), pattern));
+    let entry = (await entries.next())?.value;
+    while (entry) {
+      try {
+        if (!entry.includes("\\node_modules\\")) await import(fs.resolve(entry));
+      }
+      catch { this.#failed = true; }
+      entry = (await entries.next())?.value;
+    }
+    let output = "";
+    for (let i = 0, len = this.#results.length; i < len; i++) {
+      const { name, tests, time } = this.#results[i];
+      if (name) output += `\n${name}\n`;
+      const [results, passing, total] = processTests(tests);
+      output += `${results}${passing === total ? console.green : console.red}${passing}/${total} passing ${console.reset + console.dim}(${time}ms)${console.reset}\n`
+    }
+    system.log(output);
+    process.exit(this.#failed ? -1 : 0);
+  }
 
-const files = [];
-const entries = fs.glob(".test.js");
-const results = { errors: [], code: 0, stderr: [] };
-let entry = (await entries.next())?.value;
-while (entry) {
-  files.push(fs.resolve(entry));
-  entry = (await entries.next())?.value;
+  async suite(name, callback) {
+    if (this.#suite) throw new Error("Suites/Describes cannot be stacked");
+    this.#suite = { name, tests: [] };
+    const start = performance();
+    try {
+      const value = callback();
+      if (value instanceof Promise)
+        value.then(() => this.#suite.time = performance(start))
+          .catch(() => this.#suite.time = performance(start));
+      else this.#suite.time = performance(start)
+    } catch {
+      this.#suite.time = performance(start)
+    }
+    this.#results.push(this.#suite);
+    this.#suite = null;
+  }
+
+  async test(name, callback) {
+    const test = { name };
+    const start = performance();
+    try {
+      const value = callback();
+      if (value instanceof Promise) value.then(() => {
+        test.status = "pass";
+        test.time = performance(start);
+      }).catch((error) => {
+        test.status = "fail";
+        test.error = error;
+        test.time = performance(start);
+        this.#failed = true;
+      });
+      else {
+        test.status = "pass";
+        test.time = performance(start);
+      }
+    } catch (error) {
+      test.status = "fail";
+      test.error = error;
+      test.time = performance(start);
+      this.#failed = true;
+    }
+    if (this.#suite) this.#suite.tests.push(test);
+    else this.#results.push({ tests: [test], time: test.time });
+  }
 }
-run({ files, watch: process.env.NODE_WATCH })
-  .on("test:enqueue", ({ name, nesting }) => system.log("test:enqueue", name, nesting))
-  .on("test:plan", ({ nesting, count }) => system.log("test:plan", nesting, count))
-  .on("test:fail", ({ name, nesting, details }) => system.log("test:fail", name, nesting, details))
-  .on("test:complete", ({ name, nesting, details }) => system.log("test:complete", name, nesting, details.duration_ms, details.passed))
-  .on("test:stderr", ({ message }) => console.error(message))
-  .on("test:stdout", ({ message }) => console.log(message))
-  .on("test:coverage", (arg) => system.log("test:coverage", Object.keys(arg)));
 
-
-function diagnostic(message) {
-  system.info(message);
-  clearTimeout(results.timer);
-  results.timer = setTimeout(() => {
-    results.errors.forEach((error) => system.error("\n" + error));
-    if (results.code === 1)
-      results.stderr.forEach((error) => system.error("\n" + error));
-    process.exit(results.code);
-  }, 250);
+function performance(start) {
+  if (!start) return process.hrtime();
+  const end = process.hrtime(start);
+  return (end[0] * 1000) + (end[1] / 1e6);
 }
 
-function report(nesting, name, status, duration, error) {
-  let message = "";
-  if (nesting === 0) message += status === "start" ? "┌" : "└";
-  else message += "├" + "─".repeat(nesting);
-  if (status === "fail") (message += console.red), (results.code = 1);
-  if (status === "pass") message += console.green;
-  message += " " + name;
-  if (duration) message += ` ${console.reset + console.dim}(${duration} ms)`;
-  if (error) results.errors.push(error);
-  if (nesting === 0 && status !== "start") message += "\n";
-  return system.log(message);
+function processTests(tests) {
+  let passing = 0;
+  let total = 0;
+  let acc = "";
+  for (let i = 0, len = tests?.length || 0; i < len; i++) {
+    const { name, status, time, error } = tests[i];
+    if (status === "pass") {
+      acc += `  ${console.green}✔  ${name} ${console.reset + console.dim}(${time}ms)${console.reset}\n`;
+      passing++;
+    }
+    else acc += `  ${console.red}✖  ${name} ${console.reset + console.dim}(${time}ms)${console.reset}\n\t${console.red + error + console.reset}\n`;
+    total++;
+  }
+  return [acc, passing, total];
 }
-*/
