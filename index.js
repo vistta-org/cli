@@ -37,6 +37,10 @@ class CLI {
   define(key, value) {
     global[key] = value;
   }
+
+  env(key, value) {
+    process.env[key] = value;
+  }
 };
 
 export { CLI };

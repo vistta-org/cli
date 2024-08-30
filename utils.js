@@ -59,6 +59,29 @@ async function importCLI(command, system) {
   return new system["default"](options);
 }
 
+async function availableCLIs() {
+  const require = createRequire(import.meta.url);
+  const checked = {}
+  const commands = {}
+  const processPackage = async (dirname) => {
+    const path = fs.resolve(dirname, "package.json");
+    if (checked[path]) return;
+    else checked[path] = true;
+    const { name, vistta, dependencies, workspaces } = (await importJSON(path)) || {};
+    if (vistta?.cli) commands[name] = Object.keys(vistta.cli);
+    if (workspaces) {
+      const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
+      for (let i = 0, len = workspaceDirnames.length; i < len; i++)
+        await processPackage(workspaceDirnames[i]);
+    }
+    const keys = Object.keys(dependencies || {});
+    for (let i = 0, len = keys.length; i < len; i++)
+      await processPackage(fs.dirname(require.resolve(keys[i])));
+  }
+  await processPackage(process.cwd());
+  return commands;
+}
+
 async function getOutdatedPackages(dirname) {
   const packages = (await getProjectLock(dirname))?.packages || {};
   const data = {};
@@ -107,7 +130,7 @@ async function getOutdatedPackages(dirname) {
   return result;
 }
 
-export { fs, importJSON, importEnv, importCLI, getOutdatedPackages };
+export { fs, importJSON, importEnv, importCLI, availableCLIs, getOutdatedPackages };
 
 async function getProjectLock(path) {
   if (fs.existsSync(path + "/package-lock.json"))

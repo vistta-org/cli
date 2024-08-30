@@ -1,3 +1,4 @@
+import { Console, colors } from "@vistta/console";
 import { default as DefaultCLI } from "./default.js";
 import assert from 'node:assert';
 import fs from "@vistta/fs";
@@ -14,9 +15,20 @@ export default class extends DefaultCLI {
     this.define("test", this.test.bind(this));
     this.define("it", this.test.bind(this));
     this.define("assert", assert);
+    if (!process.env.NODE_DEBUG) {
+      const writer = new WritableStream({ write() { } }).getWriter();
+      this.define("console", new Console({ writer, clear() { } }));
+    }
+  }
+
+  help() {
+    system.log("vistta test [pattern]");
+    system.log("\nUsage:\n");
+    system.log("vistta test [pattern]\tRuns all the tests that match the pattern in the current project");
   }
 
   async main(_, pattern = "**/*.test.js") {
+    system.announce(`Vistta CLI v${process.env.CLI_VERSION}`);
     const entries = fs.glob(fs.resolve(process.cwd(), pattern));
     let entry = (await entries.next())?.value;
     while (entry) {
@@ -31,7 +43,7 @@ export default class extends DefaultCLI {
       const { name, tests, time } = this.#results[i];
       if (name) output += `\n${name}\n`;
       const [results, passing, total] = processTests(tests);
-      output += `${results}${passing === total ? console.green : console.red}${passing}/${total} passing ${console.reset + console.dim}(${time}ms)${console.reset}\n`
+      output += `${results}${passing === total ? colors.green : colors.red}${passing}/${total} passing ${colors.reset + colors.dim}(${time}ms)${colors.reset}\n`
     }
     system.log(output);
     process.exit(this.#failed ? -1 : 0);
@@ -96,10 +108,10 @@ function processTests(tests) {
   for (let i = 0, len = tests?.length || 0; i < len; i++) {
     const { name, status, time, error } = tests[i];
     if (status === "pass") {
-      acc += `  ${console.green}✔  ${name} ${console.reset + console.dim}(${time}ms)${console.reset}\n`;
+      acc += `  ${colors.green}✔  ${name} ${colors.reset + colors.dim}(${time}ms)${colors.reset}\n`;
       passing++;
     }
-    else acc += `  ${console.red}✖  ${name} ${console.reset + console.dim}(${time}ms)${console.reset}\n\t${console.red + error + console.reset}\n`;
+    else acc += `  ${colors.red}✖  ${name} ${colors.reset + colors.dim}(${time}ms)${colors.reset}\n\t${colors.red + error + colors.reset}\n`;
     total++;
   }
   return [acc, passing, total];

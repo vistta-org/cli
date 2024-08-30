@@ -1,3 +1,4 @@
+import { Console } from "@vistta/console";
 import { CLI } from "../index.js";
 import fs from "@vistta/fs";
 
@@ -10,9 +11,28 @@ export default class extends CLI {
     this.register(fs.resolve(dirname, "../loaders/typescript.js"), "*", ["ts", "mts", "cts"], true);
     this.register(fs.resolve(dirname, "../loaders/json.js"), "*", "json");
     this.register(fs.resolve(dirname, "../loaders/bundler.js"), "bundler");
+    this.define("system", new Console({ date: false, index: -1 }));
+    this.define("console", new Console());
+  }
+
+  async help() {
+    const moduleCLIs = await (await import("../utils.js")).availableCLIs();
+    system.log("vistta <command/script>");
+    system.log("\nAvailable commands:\n");
+    system.log("vistta packages");
+    system.log("vistta test");
+    const modules = Object.keys(moduleCLIs);
+    for (let i = 0, len = modules.length; i < len; i++) {
+      const module = modules[i];
+      for (let i2 = 0, len2 = moduleCLIs[module].length; i2 < len2; i2++) {
+        if (moduleCLIs[module][i2] === "default") continue;
+        system.log(`vistta ${moduleCLIs[module][i2]}\t\t${module}`);
+      }
+    }
   }
 
   async main(file) {
+    system.announce(`Vistta CLI v${process.env.CLI_VERSION}`);
     if (process.env.NODE_ENV === "development") await this.outdated();
     import(fs.resolve(process.cwd(), file));
   }

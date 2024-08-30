@@ -1,14 +1,28 @@
+import { Console } from "@vistta/console";
 import { CLI } from "../index.js";
 import { fs, importJSON, getOutdatedPackages } from "../utils.js";
 
 export default class extends CLI {
   constructor(options) {
     super(options);
+    this.define("system", new Console({ date: false, index: -1 }));
+    this.define("console", new Console());
+  }
+
+  help() {
+    system.log("vistta package <command>");
+    system.log("\nUsage:\n");
+    system.log("vistta package outdated\t\t\tchecks outdated modules in current project");
+    system.log("vistta package outdated [package]\tchecks if a specific package is outdated");
+    system.log("vistta package patch\t\t\tpatches security outdated modules in current project");
+    system.log("vistta package patch [package]\t\tpatches a specific security outdated package");
+    system.log("vistta package update\t\t\tupdates outdated modules in current project");
+    system.log("vistta package update [package]\t\tupdates a specific outdated package");
   }
 
   async main(_, command, packageName) {
     if (command !== "outdated" && command !== "patch" && command !== "update")
-      return system.log("Usage: vistta package [outdated|patch|update] [package name]");
+      return this.help();
     const modules = await getOutdatedPackages(process.cwd());
     let valid = true;
     let update = 0;

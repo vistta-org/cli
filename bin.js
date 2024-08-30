@@ -15,15 +15,15 @@ for (let i = 0, len = projectEnvKeys.length; i < len; i++)
 env.CLI_VERSION = rootPackage.version;
 env.PROJECT_NAME = projectPackage.name;
 env.PROJECT_VERSION = projectPackage.version;
-if (!process.argv[2]) console.log("vistta <command/script>"), process.exit();
-const argv = [process.argv[2]];
+const argv = [];
 const execArgv = [
   "--import",
   pathToFileURL(fs.resolve(dirname, "register.js")),
 ];
-for (let i = 3, len = process.argv.length; i < len; i++) {
+for (let i = 2, len = process.argv.length; i < len; i++) {
   const arg = process.argv[i].toLowerCase();
   if (arg === "-d" || arg === "--dev") env.NODE_ENV = "development";
+  else if (arg === "-h" || arg === "--help") env.NODE_HELP = true;
   else if (arg === "-w" || arg === "--watch") {
     env.NODE_WATCH = true;
     execArgv.push("--watch");
@@ -33,6 +33,7 @@ for (let i = 3, len = process.argv.length; i < len; i++) {
   else if (arg.startsWith("-")) argv.push(execArgv);
   else argv.push(arg);
 }
+if (argv.length === 0) env.NODE_HELP = true;
 if (!env.NODE_DEBUG) execArgv.unshift("--no-warnings");
 fork(fs.resolve(dirname, "main.js"), argv, {
   env,
