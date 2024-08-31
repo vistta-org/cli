@@ -1,6 +1,6 @@
 import { Console } from "@vistta/console";
 import { CLI } from "../index.js";
-import { fs, importJSON, getOutdatedPackages } from "../utils.js";
+import { fs, importJSON, getOutdatedPackages, incrementPackageVersion } from "../utils.js";
 
 export default class extends CLI {
   constructor(options) {
@@ -12,6 +12,9 @@ export default class extends CLI {
   help() {
     system.log("vistta package <command>");
     system.log("\nUsage:\n");
+    system.log("vistta package name\t\t\toutputs current project name");
+    system.log("vistta package version\t\t\toutputs current project version");
+    system.log("vistta package version [increment]\t\t\tupdates current project version");
     system.log("vistta package outdated\t\t\tchecks outdated modules in current project");
     system.log("vistta package outdated [package]\tchecks if a specific package is outdated");
     system.log("vistta package patch\t\t\tpatches security outdated modules in current project");
@@ -19,8 +22,12 @@ export default class extends CLI {
     system.log("vistta package update\t\t\tupdates outdated modules in current project");
     system.log("vistta package update [package]\t\tupdates a specific outdated package");
   }
-
-  async main(_, command, packageName) {
+  async main(_, command, arg1) {
+    if (command === "name") return system.log(process.env.PROJECT_NAME);
+    if (command === "version") {
+      if (!arg1) return system.log(process.env.PROJECT_VERSION);
+      return system.log(await incrementPackageVersion(fs.resolve(process.env.PROJECT_PATH, "package.json"), arg1));
+    }
     if (command !== "outdated" && command !== "patch" && command !== "update")
       return this.help();
     const modules = await getOutdatedPackages(process.cwd());
@@ -30,7 +37,7 @@ export default class extends CLI {
       const { name, package: packagePath, current, wanted, latest, dev } = modules[i];
       if (command === "patch" || command === "update") {
         if (command === "patch" && current === wanted) continue;
-        if (packageName && name !== packageName) continue;
+        if (arg1 && name !== arg1) continue;
         const packageObj = await importJSON(packagePath);
         packageObj[dev ? "devDependencies" : "dependencies"][name] = "^" + (command === "patch" ? wanted : latest);
         await fs.writeFile(packagePath, JSON.stringify(packageObj, null, 2));

@@ -13,6 +13,7 @@ const projectEnvKeys = Object.keys(projectPackage?.env || {});
 for (let i = 0, len = projectEnvKeys.length; i < len; i++)
   env[projectEnvKeys[i]] = projectPackage.env[projectEnvKeys[i]];
 env.CLI_VERSION = rootPackage.version;
+env.PROJECT_PATH = cwd;
 env.PROJECT_NAME = projectPackage.name;
 env.PROJECT_VERSION = projectPackage.version;
 const argv = [];

@@ -1,7 +1,7 @@
 import fs from "@vistta/fs";
 import { createRequire } from 'node:module';
 import { pathToFileURL } from "node:url";
-import { satisfies } from "semver";
+import { satisfies, inc } from "semver";
 
 async function importJSON(filepath) {
   try {
@@ -130,7 +130,16 @@ async function getOutdatedPackages(dirname) {
   return result;
 }
 
-export { fs, importJSON, importEnv, importCLI, availableCLIs, getOutdatedPackages };
+async function incrementPackageVersion(filepath, type) {
+  const packageJSON = await importJSON(filepath);
+  if (!["major", "minor", "patch", "premajor", "preminor", "prepatch", "prerelease"].includes(type))
+    throw new TypeError("Invalid version increment type.");
+  packageJSON.version = inc(packageJSON.version, type);
+  await fs.writeFile(filepath, JSON.stringify(packageJSON, null, 2));
+  return packageJSON.version;
+}
+
+export { fs, importJSON, importEnv, importCLI, availableCLIs, getOutdatedPackages, incrementPackageVersion };
 
 async function getProjectLock(path) {
   if (fs.existsSync(path + "/package-lock.json"))
