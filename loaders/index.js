@@ -11,10 +11,10 @@ const CWD = process.cwd();
 const FALLBACK = "*";
 let instance;
 
-export async function initialize({ loaders, resolve, options }) {
+export async function initialize({ loaders, resolve: _resolve, options }) {
   await initializeTypescript(options?.compiler || {});
-  await initializeBundler(options?.bundler || {});
-  instance = { loaders, resolve };
+  await initializeBundler({ resolve, load, options: options?.bundler || {} });
+  instance = { loaders, resolve: _resolve };
 }
 
 export async function resolve(specifier, context, nextResolve, options) {

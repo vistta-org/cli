@@ -1,6 +1,6 @@
-import { Console } from "@vistta/console";
-import { CLI } from "../index.js";
 import fs from "@vistta/fs";
+import Console from "@vistta/console";
+import { CLI } from "../index.js";
 
 const dirname = fs.dirname(import.meta.url);
 

@@ -36,6 +36,7 @@
   "dependencies": {
     "@vistta/console": "*",
     "@vistta/fs": "*",
+    "@vistta/utils": "*",
     "esbuild": "^0.23.0",
     "semver": "^7.6.3"
   }

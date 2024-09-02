@@ -1,7 +1,7 @@
+import fs from "@vistta/fs";
 import { Console, colors } from "@vistta/console";
 import { default as DefaultCLI } from "./default.js";
 import assert from 'node:assert';
-import fs from "@vistta/fs";
 
 export default class extends DefaultCLI {
   #suite;

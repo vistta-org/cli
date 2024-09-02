@@ -22,6 +22,7 @@ export default class extends CLI {
     system.log("vistta package update\t\t\tupdates outdated modules in current project");
     system.log("vistta package update [package]\t\tupdates a specific outdated package");
   }
+
   async main(_, command, arg1) {
     if (command === "name") return system.log(process.env.PROJECT_NAME);
     if (command === "version") {
