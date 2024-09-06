@@ -1,6 +1,7 @@
 import { Console } from "@vistta/console";
+import fs from "@vistta/fs";
 import { CLI } from "../index.js";
-import { fs, importJSON, getOutdatedPackages, incrementPackageVersion } from "../utils.js";
+import { importJSON, getOutdatedPackages, incrementPackageVersion } from "../utils.js";
 
 export default class extends CLI {
   constructor(options) {
