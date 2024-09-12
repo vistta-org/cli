@@ -58,7 +58,7 @@ export async function load(_, { path, ...options }) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function setup({ files, resources, filename, load, resolve, paths = {}, exports, platform }) {
+function setup({ files: bundlerFiles, resources: bundlerResources, filename, load, resolve, paths = {}, exports, platform }) {
   const filter = /.*/;
   const basename = fs.basename(filename);
   const dirname = fs.dirname(filename);
@@ -99,11 +99,11 @@ function setup({ files, resources, filename, load, resolve, paths = {}, exports,
           resources,
           files = [],
         } = await load(path, { importAttributes }, () => ({}));
-        files.push(...files);
+        bundlerFiles.push(...files);
         if (!source) return { loader: "js" };
         for (let i = 0, len = resources?.length || 0; i < len; i++) {
           const { hash, path, code, compiler } = resources[i];
-          resources[hash] = path || code || compiler;
+          bundlerResources[hash] = path || code || compiler;
         }
         return { contents: source, loader: "js" };
       })

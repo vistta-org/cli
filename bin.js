@@ -35,7 +35,6 @@ for (let i = 2, len = process.argv.length; i < len; i++) {
   else if (arg === "-h" || arg === "--help") env.NODE_HELP = true;
   else if (arg === "-t" || arg === "--trace") env.NODE_TRACE = true;
   else if (arg === "--debug") env.NODE_DEBUG = true;
-  else if (arg === "--ci") env.CI = true;
   else argv.push(process.argv[i]);
 }
 if (argv.length === 0) env.NODE_HELP = true;

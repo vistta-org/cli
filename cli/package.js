@@ -50,7 +50,7 @@ export default class extends CLI {
     }
 
     if (modules.length == 0) system.log("Everything is up to date");
-    else if (update > 0) console.log(`${update} Package${update > 1 ? "s" : ""} updated, proceed with preferred install command`);
+    else if (update > 0) system.log(`${update} Package${update > 1 ? "s" : ""} updated, proceed with preferred install command`);
     process.exit(valid ? 0 : -1);
   }
 }

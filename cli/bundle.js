@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { default as DefaultCLI } from "./default.js";
 import { bundle } from "../loaders/bundler.js"
+import { evalCLIString } from "../utils.js";
 
 export default class extends DefaultCLI {
 
@@ -16,7 +17,7 @@ export default class extends DefaultCLI {
     while (i < args.length) {
       const [option, value] = args[i].toLowerCase().split("=");
       if (option.startsWith("--")) {
-        options[option.slice(2)] = cliEval(value);
+        options[option.slice(2)] = evalCLIString(value);
         args.splice(i, 1);
       }
       else i++;
@@ -26,10 +27,4 @@ export default class extends DefaultCLI {
     options.outdir = args[1];
     bundle(options);
   }
-}
-
-function cliEval(value) {
-  if (value == null || value === "true") return true;
-  if (value === "false") return false;
-  return value;
 }

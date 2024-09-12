@@ -112,6 +112,12 @@ export async function availableCLIs() {
   return commands;
 }
 
+export function evalCLIString(value) {
+  if (value == null || value === "true") return true;
+  if (value === "false") return false;
+  return value;
+}
+
 export async function getOutdatedPackages(dirname) {
   const packages = (await getProjectLock(dirname))?.packages || {};
   const data = {};
