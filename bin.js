@@ -22,6 +22,7 @@ const argv = [];
 const execArgv = [
   "--import",
   pathToFileURL(fs.resolve(dirname, "register.js")),
+  //  "--experimental-sqlite",
   "--title=VISTTA"
 ];
 for (let i = 2, len = process.argv.length; i < len; i++) {

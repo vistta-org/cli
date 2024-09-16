@@ -131,10 +131,10 @@ export async function getOutdatedPackages(dirname) {
       await importJSON(filepath);
     await fetchPackageUpdates(filepath, dependencies);
     await fetchPackageUpdates(filepath, devDependencies, true);
-    if (workspace || !(workspaces?.length > 0)) return;
-    const workspaceDirnames = resolveWorkspacesDirnames(workspaces);
+    if (!(workspaces?.length > 0)) return;
+    const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
     for (let i = 0, len = workspaceDirnames.length; i < len; i++)
-      processPackage(fs.resolve(workspaceDirnames[i], "package.json"), true);
+      await processPackage(fs.resolve(workspaceDirnames[i], "package.json"), true);
   }
   async function fetchPackageUpdates(path, deps = {}, dev) {
     const keys = Object.keys(deps);
