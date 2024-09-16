@@ -14,6 +14,7 @@ export default class extends DefaultCLI {
 
   constructor(options) {
     super(options);
+    this.env("NODE_ENV", "testing");
     this.define("suite", this.suite.bind(this));
     this.define("test", this.test.bind(this));
     this.define("expect", this.expect.bind(this));
