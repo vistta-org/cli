@@ -15,8 +15,9 @@ export default class extends CLI {
     this.define("console", new Console());
   }
 
-  async help() {
+  async help(message) {
     const moduleCLIs = await (await import("../utils.js")).availableCLIs();
+    if (message) system.log(message)
     system.log("vistta <command/script>");
     system.log("\nAvailable commands:\n");
     system.log("vistta packages");
@@ -34,7 +35,9 @@ export default class extends CLI {
   async main(file) {
     system.announce(`Vistta CLI v${process.env.CLI_VERSION}`);
     if (process.env.NODE_ENV === "development") await this.outdated();
-    import(fs.resolve(process.cwd(), file));
+    const filepath = fs.resolve(process.cwd(), file);
+    if (!fs.existsSync(filepath)) return this.help(`Unknown command/script: "${file}"`);
+    import(filepath);
   }
 
   async outdated() {
