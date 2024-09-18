@@ -80,8 +80,7 @@ function setup({ files: bundlerFiles, resources: bundlerResources, filename, loa
         );
         if (!builtin && file) return { path: final };
         if (platform === "node") return { external: true };
-        const exists = await importExists(final);
-        if (!builtin && exists) return {};
+        if (!builtin) return {};
         return { path: final, namespace: "ignore" };
       }),
       build.onLoad({ filter }, async ({ path, namespace, with: importAttributes = {} }) => {
@@ -109,10 +108,4 @@ function setup({ files: bundlerFiles, resources: bundlerResources, filename, loa
       })
     ),
   }
-}
-
-function importExists(module) {
-  return new Promise((resolve) => {
-    import(module).then(() => resolve(true)).catch(() => resolve(false));
-  });
 }
