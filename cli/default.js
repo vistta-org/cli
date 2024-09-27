@@ -7,10 +7,10 @@ const dirname = fs.dirname(import.meta.url);
 export default class extends CLI {
   constructor(options) {
     super(options);
-    this.register(fs.resolve(dirname, "../loaders/file.js"), "*");
-    this.register(fs.resolve(dirname, "../loaders/typescript.js"), "*", ["ts", "mts", "cts"], true);
-    this.register(fs.resolve(dirname, "../loaders/json.js"), "*", "json");
-    this.register(fs.resolve(dirname, "../loaders/bundler.js"), "bundler");
+    this.register(fs.resolve(dirname, "../loaders/file.js"), "File", "*");
+    this.register(fs.resolve(dirname, "../loaders/typescript.js"), "Typescript", "*", ["ts", "mts", "cts"], true);
+    this.register(fs.resolve(dirname, "../loaders/json.js"), "JSON", "*", "json");
+    this.register(fs.resolve(dirname, "../loaders/bundler.js"), "Bundler", "bundler");
     this.define("system", new Console({ date: false, index: -1 }));
     this.define("console", new Console());
   }

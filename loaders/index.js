@@ -11,6 +11,13 @@ const CWD = process.cwd();
 const FALLBACK = "*";
 let instance;
 
+class LoaderError extends Error {
+  constructor(name, message) {
+    super(message);
+    this.name = name + " Loader Error";
+  }
+}
+
 export async function initialize({ loaders, resolve: _resolve, options }) {
   await initializeTypescript(options?.compiler || {});
   await initializeBundler({ resolve, load, options: options?.bundler || {} });
@@ -66,8 +73,8 @@ export async function load(url, context, nextLoad) {
     await fs.readFile(path, "utf-8"),
     options,
   );
-  if (errors?.length) throw new Error(errors.join("\n"));
-  warnings?.forEach((warning) => console.warn(`Loader Warning: ${warning}\n`));
+  if (errors?.length) throw new LoaderError(loader.name, `${errors.join("\n")}`);
+  warnings?.forEach((warning) => console.warn(`${loader.name} Loader Warning: ${warning}\n`));
   return {
     format: "module",
     shortCircuit: true,
@@ -112,6 +119,9 @@ async function getLoader(extension, type = FALLBACK) {
       );
     else return await getLoader(FALLBACK, type);
   }
-  if (typeof loader === "string") instance.loaders[type][extension] = (await import(loader))?.load;
-  return instance.loaders[type]?.[extension];
+  if (!loader?.call) {
+    const load = (await import(loader.path))?.load;
+    loader.call = (...args) => load.call(...args);
+  }
+  return loader;
 }

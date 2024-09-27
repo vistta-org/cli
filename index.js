@@ -19,8 +19,9 @@ class CLI {
     this.#options = options || {};
   }
 
-  register(path, type, extensions = "*", resolve) {
+  register(path, name, type, extensions = "*", resolve) {
     if (typeof path !== "string") throw new TypeError("Invalid argument: path must be a string");
+    if (typeof name !== "string") throw new TypeError("Invalid argument: name must be a string");
     if (typeof type !== "string") throw new TypeError("Invalid argument: type must be a string");
     if (!Array.isArray(extensions)) {
       if (typeof extensions === "string") extensions = [extensions];
@@ -30,7 +31,7 @@ class CLI {
     if (!this.#loaders[type]) this.#loaders[type] = {};
     for (let i = 0, len = extensions.length; i < len; i++) {
       if (resolve && this.#resolve.indexOf() == -1) this.#resolve.push(extensions[i]);
-      this.#loaders[type][extensions[i]] = path;
+      this.#loaders[type][extensions[i]] = { name, path };
     }
   }
 

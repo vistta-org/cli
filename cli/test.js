@@ -15,8 +15,12 @@ export default class extends DefaultCLI {
   constructor(options) {
     super(options);
     this.env("NODE_ENV", "testing");
-    this.define("suite", this.suite.bind(this));
-    this.define("test", this.test.bind(this));
+    const suite = this.suite.bind(this, false);
+    suite.only = this.suite.bind(this, true);
+    this.define("suite", suite);
+    const test = this.test.bind(this, false);
+    test.only = this.test.bind(this, true);
+    this.define("test", test);
     this.define("expect", this.expect.bind(this));
     if (!process.env.NODE_DEBUG) {
       const writer = new WritableStream({ write() { } }).getWriter();
@@ -28,7 +32,8 @@ export default class extends DefaultCLI {
     system.log("vistta test [...patterns]");
     system.log("\nUsage:\n");
     system.log("vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project");
-    system.log("vistta test --only=\"pattern\"\tRuns all the tests that match the only pattern/s in the current project");
+    system.log("vistta test --filter=\"pattern\"\tRuns all the tests that match the filter pattern/s in the current project");
+    system.log("vistta test --only\tRuns all the tests that have the only");
   }
 
   async main(_, ...args) {
@@ -67,10 +72,10 @@ export default class extends DefaultCLI {
     process.exit(this.#failed ? -1 : 0);
   }
 
-  async suite(name, callback) {
+  async suite(only, name, callback) {
     if (this.#suite) throw new Error("Suites/Describes cannot be stacked");
     this.#runningCounter++;
-    this.#suite = { name, tests: [] };
+    this.#suite = { name, only, tests: [] };
     try {
       const value = callback();
       if (value instanceof Promise) await value;
@@ -80,8 +85,11 @@ export default class extends DefaultCLI {
     this.#runningCounter--;
   }
 
-  async test(name, callback) {
-    if (this.#options.only && !name.match(new RegExp(this.#options.only, "i"))) return;
+  async test(only, name, callback) {
+    if (
+      (this.#options.filter && !name.match(new RegExp(this.#options.filter, "i"))) ||
+      (this.#options.only && !(only || this.#suite?.only))
+    ) return;
     this.#runningCounter++;
     const test = { name };
     test.start = performance();
