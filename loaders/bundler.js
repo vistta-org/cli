@@ -3,43 +3,58 @@ import { build } from "esbuild";
 import { pathToFileURL } from "node:url";
 import { assign, extract, remove } from "../utils.js";
 
+export class Bundler {
+  #resolve;
+  #load;
+  #options;
+  
+  constructor({ resolve, load, options }) {
+    this.#resolve = resolve;
+    this.#load = load;
+    this.#options = options;
+  }
+
+  async bundle(options = {}) {
+    const files = [];
+    const resources = {};
+    assign(options, this.#options);
+    const [filename, paths, exports] = extract(options, "filename", "paths", "exports");
+    options.entryPoints = [exports ? "@exports" : filename];
+    options.bundle = true;
+    options.outdir ??= "dist";
+    options.legalComments ??= "none";
+    options.keepNames ??= true;
+    options.treeShaking ??= true;
+    options.define ??= {};
+    options.plugins = [];
+    options.minify ??= process.env.NODE_ENV === "production";
+    options.format ??= options.globalName ? "iife" : "esm";
+    options.target ??= "esnext";
+    options.define[`process`] = "undefined";
+    const keys = Object.keys(process.env);
+    for (let i = 0, len = keys.length; i < len; i++) {
+      if (/[():;,.\s]/.test(keys[i])) continue;
+      options.define[`process.env.${keys[i]}`] = JSON.stringify(process.env[keys[i]]);
+    }
+    options.plugins.unshift(setup({ resolve: this.#resolve, load: this.#load, paths, filename, files, resources, exports, platform: options.platform }));
+    const { outputFiles, errors, warnings } = await build(options);
+    return {
+      code: outputFiles?.[0]?.text ?? "",
+      files: Array.from(new Set(files)),
+      resources, errors, warnings
+    };
+  }
+}
+
 let instance;
 
 export async function bundle(options = {}) {
-  const files = [];
-  const resources = {};
   if (!instance) await global.__initialize();
-  const { load, resolve } = instance;
-  assign(options, instance.options);
-  const [filename, paths, exports] = extract(options, "filename", "paths", "exports");
-  options.entryPoints = [exports ? "@exports" : filename];
-  options.bundle = true;
-  options.outdir ??= "dist";
-  options.legalComments ??= "none";
-  options.keepNames ??= true;
-  options.treeShaking ??= true;
-  options.define ??= {};
-  options.plugins = [];
-  options.minify ??= process.env.NODE_ENV === "production";
-  options.format ??= options.globalName ? "iife" : "esm";
-  options.target ??= "esnext";
-  options.define[`process`] = "undefined";
-  const keys = Object.keys(process.env);
-  for (let i = 0, len = keys.length; i < len; i++) {
-    if (/[():;,.\s]/.test(keys[i])) continue;
-    options.define[`process.env.${keys[i]}`] = JSON.stringify(process.env[keys[i]]);
-  }
-  options.plugins.unshift(setup({ resolve, load, paths, filename, files, resources, exports, platform: options.platform }));
-  const { outputFiles, errors, warnings } = await build(options);
-  return {
-    code: outputFiles?.[0]?.text ?? "",
-    files: Array.from(new Set(files)),
-    resources, errors, warnings
-  };
+  return instance.bundle(options);
 }
 
 export async function initialize({ resolve, load, options }) {
-  instance = { resolve, load, options };
+  instance = new Bundler({ resolve, load, options });
 }
 
 export async function load(_, { path, ...options }) {

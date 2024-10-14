@@ -6,7 +6,7 @@ export const tsconfig = { compilerOptions: {} };
 export async function initialize(compilerOptions) {
   await transferProperties(
     tsconfig,
-    loadTSConfig(fs.resolve(fs.dirname(import.meta.url), "../")),
+    loadTSConfig(fs.resolve(import.meta.dirname, "../")),
   );
   await transferProperties(tsconfig, loadTSConfig(process.cwd()));
   await transferProperties(tsconfig, { compilerOptions });

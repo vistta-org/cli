@@ -1,10 +1,25 @@
 class CLI {
-  #options;
   #loaders = {};
   #resolve = ["js", "mjs", "cjs"];
 
-  get options() {
-    return this.#options;
+  static bind(instance, method, args) {
+    if(instance.options.parseArge !== false) {
+      let i = 0;
+      const parse = (value) => {
+        if (value == null || value === "true") return true;
+        if (value === "false") return false;
+        return value;
+      }
+      while (i < args.length) {
+        const [option, value] = args[i].toLowerCase().split("=");
+        if (option.startsWith("--")) {
+          instance.options[option.slice(2)] = parse(value);
+          args.splice(i, 1);
+        }
+        else i++;
+      }
+    }
+    return instance[method].bind(instance, ...args);
   }
 
   get loaders() {
@@ -16,7 +31,7 @@ class CLI {
   }
 
   constructor(options) {
-    this.#options = options || {};
+    this.options = options || {};
   }
 
   register(path, name, type, extensions = "*", resolve) {
@@ -44,4 +59,5 @@ class CLI {
   }
 };
 
+export { Bundler } from "./loaders/bundler.js";
 export { CLI };

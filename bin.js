@@ -5,7 +5,7 @@ import { ENABLED_NODE_OPTIONS, importEnv, importJSON } from "./utils.js";
 import { pathToFileURL } from "node:url";
 import { fork } from "node:child_process";
 
-const dirname = fs.dirname(import.meta.url);
+const dirname = import.meta.dirname;
 const cwd = process.cwd();
 const rootPackage = await importJSON(fs.resolve(dirname, "package.json"));
 const projectPackage = await importJSON(fs.resolve(cwd, "package.json"));

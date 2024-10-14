@@ -11,8 +11,8 @@ const cli = await importCLI(process.argv[2], {
   "test": "./cli/test.js"
 });
 if (!(cli instanceof CLI)) throw new TypeError("Invalid CLI");
-if (process.env.NODE_HELP) global.__main = (cli.help || (new DefaultCLI()).help).bind(cli, ...process.argv.slice(2))
-else global.__main = cli.main.bind(cli, ...process.argv.slice(2));
+if (process.env.NODE_HELP) global.__main = CLI.bind((cli || (new DefaultCLI())), "help", process.argv.slice(2));
+else global.__main = CLI.bind(cli, "main", process.argv.slice(2));
 const data = { loaders: cli.loaders, resolve: cli.resolve, options: cli.options };
 global.__initialize = () => initialize(data);
 register("./loaders/index.js", import.meta.url, { data });

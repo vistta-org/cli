@@ -80,7 +80,7 @@ export async function importCLI(command, system) {
   if (system[command])
     return new (
       await import(
-        pathToFileURL(fs.resolve(fs.dirname(import.meta.url), system[command]))
+        pathToFileURL(fs.resolve(import.meta.dirname, system[command]))
       )
     ).default(options);
   if (fallback)
@@ -110,12 +110,6 @@ export async function availableCLIs() {
   };
   await processPackage(process.cwd());
   return commands;
-}
-
-export function evalCLIString(value) {
-  if (value == null || value === "true") return true;
-  if (value === "false") return false;
-  return value;
 }
 
 export async function getOutdatedPackages(dirname) {

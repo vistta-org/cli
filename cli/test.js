@@ -1,7 +1,6 @@
 import fs from "@vistta/fs";
 import { Console, colors } from "@vistta/console";
 import { default as DefaultCLI } from "./default.js";
-import { evalCLIString } from "../utils.js";
 
 const cwd = process.cwd();
 
@@ -37,15 +36,7 @@ export default class extends DefaultCLI {
   }
 
   async main(_, ...args) {
-    let i = 0;
-    while (i < args.length) {
-      const [option, value] = args[i].toLowerCase().split("=");
-      if (option.startsWith("--")) {
-        this.#options[option.slice(2)] = evalCLIString(value);
-        args.splice(i, 1);
-      }
-      else i++;
-    }
+    this.#options = this.options;
     system.announce(`Vistta CLI v${process.env.CLI_VERSION}`);
     if (args.length === 0) args = ["**/*.test.js", "**/*.test.ts"];
     for (let i = 0, len = args.length; i < len; i++)
