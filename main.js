@@ -1,1 +1,1 @@
-global.__main();
+global.vistta.main();

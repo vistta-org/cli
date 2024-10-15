@@ -15,20 +15,20 @@ export default class extends CLI {
     this.define("console", new Console());
   }
 
-  async help(message) {
+  async help() {
     const moduleCLIs = await (await import("../utils.js")).availableCLIs();
-    if (message) system.log(message)
-    system.log("vistta <command/script>");
-    system.log("\nAvailable commands:\n");
-    system.log("vistta packages");
-    system.log("vistta test");
+    system.log("vistta <command/script>\n\nAvailable commands:");
+    system.log("\tbundle, package, install, add, uninstall,");
+    system.log("\tremove, run, update, patch, outdated, test");
     const modules = Object.keys(moduleCLIs);
     for (let i = 0, len = modules.length; i < len; i++) {
       const module = modules[i];
+      const list = [];
       for (let i2 = 0, len2 = moduleCLIs[module].length; i2 < len2; i2++) {
         if (moduleCLIs[module][i2] === "default") continue;
-        system.log(`vistta ${moduleCLIs[module][i2]}\t\t${module}`);
+        list.push(moduleCLIs[module][i2]);
       }
+      system.log(`From ${module}:\n\t${list.join(", ")}`);
     }
   }
 
@@ -36,7 +36,10 @@ export default class extends CLI {
     system.announce(`Vistta CLI v${process.env.CLI_VERSION}`);
     if (process.env.NODE_ENV === "development") await this.outdated();
     const filepath = fs.resolve(process.cwd(), file);
-    if (!fs.existsSync(filepath)) return this.help(`Unknown command/script: "${file}"`);
+    if (!fs.existsSync(filepath)) {
+      system.log(`Unknown command/script "${file}"\n`);
+      return this.help();
+    }
     import(filepath);
   }
 

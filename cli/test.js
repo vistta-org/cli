@@ -28,15 +28,16 @@ export default class extends DefaultCLI {
   }
 
   help() {
-    system.log("vistta test [...patterns]");
-    system.log("\nUsage:\n");
+    system.log("Runs all the tests files that match the pattern/s in the current project");
+    system.log("\nUsage:");
     system.log("vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project");
     system.log("vistta test --filter=\"pattern\"\tRuns all the tests that match the filter pattern/s in the current project");
     system.log("vistta test --only\tRuns all the tests that have the only");
   }
 
-  async main(_, ...args) {
-    this.#options = this.options;
+  async main(_, ...argv) {
+    const [args, options] = this.parse(argv);
+    this.#options = options;
     system.announce(`Vistta CLI v${process.env.CLI_VERSION}`);
     if (args.length === 0) args = ["**/*.test.js", "**/*.test.ts"];
     for (let i = 0, len = args.length; i < len; i++)
