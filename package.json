@@ -8,6 +8,7 @@
     "./default": "./cli/default.js",
     "./packages": "./cli/packages.js",
     "./test": "./cli/test.js",
+    "./tsconfig": "./tsconfig.json",
     "./loaders/bundler": "./loaders/bundler.js",
     "./loaders/file": "./loaders/file.js",
     "./loaders/json": "./loaders/json.js",
@@ -16,10 +17,6 @@
   "bin": {
     "vistta": "./bin.js"
   },
-  "files": [
-    "LICENSE",
-    "tsconfig.json"
-  ],
   "scripts": {
     "postinstall": ""
   },
