@@ -1,5 +1,5 @@
 import fs from "@vistta/fs";
-import { Console, colors } from "@vistta/console";
+import { COLORS } from "@vistta/console";
 import { default as DefaultCLI } from "./default.js";
 
 const cwd = process.cwd();
@@ -21,29 +21,25 @@ export default class extends DefaultCLI {
     test.only = this.test.bind(this, true);
     this.define("test", test);
     this.define("expect", this.expect.bind(this));
-    if (!process.env.NODE_DEBUG) {
-      const writer = new WritableStream({ write() { } }).getWriter();
-      this.define("console", new Console({ writer, clear() { } }));
-    }
   }
 
   help() {
-    system.log("Runs all the tests files that match the pattern/s in the current project");
-    system.log("\nUsage:");
-    system.log("vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project");
-    system.log("vistta test --filter=\"pattern\"\tRuns all the tests that match the filter pattern/s in the current project");
-    system.log("vistta test --only\tRuns all the tests that have the only");
+    console.print("Runs all the tests files that match the pattern/s in the current project");
+    console.print("\nUsage:");
+    console.print("vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project");
+    console.print("vistta test --filter=\"pattern\"\tRuns all the tests that match the filter pattern/s in the current project");
+    console.print("vistta test --only\tRuns all the tests that have the only");
   }
 
   async main(_, ...argv) {
-    const [args, options] = this.parse(argv);
+    let [args, options] = this.parse(argv);
     this.#options = options;
-    system.announce(`Vistta CLI v${process.env.CLI_VERSION}`);
     if (args.length === 0) args = ["**/*.test.js", "**/*.test.ts"];
     for (let i = 0, len = args.length; i < len; i++)
       args[i] = fs.resolve(cwd, args[i])
     const entries = fs.glob(args);
     let entry = (await entries.next())?.value;
+    if (!process.env.NODE_DEBUG) console.disable();
     while (entry) {
       try {
         process.chdir(fs.dirname(entry));
@@ -53,14 +49,15 @@ export default class extends DefaultCLI {
       catch { this.#failed = true; }
       entry = (await entries.next())?.value;
     }
+    if (!process.env.NODE_DEBUG) console.enable();
     let output = "";
     for (let i = 0, len = this.#results.length; i < len; i++) {
       const { name, tests } = this.#results[i];
       if (name) output += `\n${name}\n`;
       const [results, passing, total, time] = processTests(tests);
-      output += `${results}${passing === total ? colors.green : colors.red}${passing}/${total} passing ${colors.reset + colors.dim}(${time}ms)${colors.reset}\n`
+      output += `${results}${passing === total ? COLORS.GREEN : COLORS.RED}${passing}/${total} passing ${COLORS.RESET + COLORS.DIM}(${time}ms)${COLORS.RESET}\n`
     }
-    system.log(output);
+    console.print(output);
     process.exit(this.#failed ? -1 : 0);
   }
 
@@ -140,10 +137,10 @@ function processTests(tests) {
     if (!first || start < first) first = start;
     if (!last || end > last) last = end;
     if (status === "pass") {
-      acc += `  ${colors.green}✔  ${name} ${colors.reset + colors.dim}(${Math.round(end - start)}ms)${colors.reset}\n`;
+      acc += `  ${COLORS.GREEN}✔  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n`;
       passing++;
     }
-    else acc += `  ${colors.red}✖  ${name} ${colors.reset + colors.dim}(${Math.round(end - start)}ms)${colors.reset}\n\t${colors.red + error + colors.reset}\n`;
+    else acc += `  ${COLORS.RED}✖  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n\t${COLORS.RED + error + COLORS.RESET}\n`;
     total++;
   }
   return [acc, passing, total, Math.round(last - first)];

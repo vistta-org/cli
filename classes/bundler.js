@@ -17,11 +17,11 @@ export class Bundler {
     this.#options = this.#loader?.options?.bundler ?? {};
   }
 
-  async run(options = {}) {
+  async run(filename, options = {}) {
     const files = [];
     const resources = {};
     assign(options, this.#options);
-    const [filename, paths, exports] = extract(options, "filename", "paths", "exports");
+    const [paths, exports] = extract(options, "paths", "exports");
     options.entryPoints = [exports ? "@exports" : filename];
     options.bundle = true;
     options.outdir ??= "dist";
@@ -46,6 +46,13 @@ export class Bundler {
       files: Array.from(new Set(files)),
       resources, errors, warnings
     };
+  }
+
+  async import(filename, options = {}) {
+    options.write = false;
+    const { code, errors, warning } = await this.run(filename, options);
+    if(code === "") return { errors, warning };
+    return await import(`data:text/javascript;base64,${Buffer.from(code).toString(`base64`)}`);
   }
 }
 

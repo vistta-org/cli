@@ -18,7 +18,7 @@ export class Loader {
     #resolve;
     #options;
   
-    get lodaders() {
+    get loaders() {
       return this.#loaders;
     }
   
@@ -65,7 +65,7 @@ export class Loader {
         ? pathToFileURL(url.split("?")[0]).href
         : url.split("?")[0];
       const path = fileURLToPath(url);
-      const extension = fs.extname(url).slice(1);
+      const extension = fs.extname(path).slice(1);
       const loader = await this.#resolveLoader(extension, options.type);
       if (!loader) return nextLoad(url, context);
       options.path = path;
@@ -99,7 +99,7 @@ export class Loader {
         else return await this.#resolveLoader(FALLBACK, type);
       }
       if (!loader?.call) {
-        const load = (await import(loader.path))?.load;
+        const load = (await import(pathToFileURL(loader.path).href))?.load;
         loader.call = (...args) => load.call(...args);
       }
       return loader;

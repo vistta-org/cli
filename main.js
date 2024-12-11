@@ -1,1 +1,1 @@
-global.vistta.main();
+process.vistta.main();

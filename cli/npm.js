@@ -1,8 +1,8 @@
 import { exec } from "node:child_process";
-import { Console } from "@vistta/console";
 import fs from "@vistta/fs";
 import { CLI } from "../index.js";
 import { importJSON, getOutdatedPackages } from "../utils.js";
+import { COLORS } from "@vistta/console";
 
 const COMMAND_MAPPING = {
   "install": "npm",
@@ -17,38 +17,36 @@ const COMMAND_MAPPING = {
 export default class extends CLI {
   constructor(options) {
     super(options);
-    this.define("system", new Console({ date: false, index: -1 }));
-    this.define("console", new Console());
   }
 
   help(command) {
     switch (command) {
       case "install":
       case "add":
-        system.log("Installs a package and any packages that it depends on.");
-        system.log("\nUsage:");
-        system.log("vistta install/add [package] [--prod]");
+        console.print("Installs a package and any packages that it depends on.");
+        console.print("\nUsage:");
+        console.print("vistta install/add [package] [--prod]");
         break;
       case "uninstall":
       case "remove":
-        system.log("Uninstalls a package, removing it from the package.json file.");
-        system.log("\nUsage:");
-        system.log("vistta uninstall/remove <package>");
+        console.print("Uninstalls a package, removing it from the package.json file.");
+        console.print("\nUsage:");
+        console.print("vistta uninstall/remove <package>");
         break;
       case "update":
-        system.log("Updates the version of outdated modules to the latest version.");
-        system.log("\nUsage:");
-        system.log("vistta update [module]");
+        console.print("Updates the version of outdated modules to the latest version.");
+        console.print("\nUsage:");
+        console.print("vistta update [module]");
         break;
       case "patch":
-        system.log("Updates the version of outdated modules to the latest patch version.");
-        system.log("\nUsage:");
-        system.log("vistta patch [module]");
+        console.print("Updates the version of outdated modules to the latest patch version.");
+        console.print("\nUsage:");
+        console.print("vistta patch [module]");
         break;
       case "outdated":
-        system.log("Lists all outdated modules in the current project.");
-        system.log("\nUsage:");
-        system.log("vistta outdated");
+        console.print("Lists all outdated modules in the current project.");
+        console.print("\nUsage:");
+        console.print("vistta outdated");
         break;
       default:
         break;
@@ -56,7 +54,6 @@ export default class extends CLI {
   }
 
   async main(command, ...args) {
-    system.announce(`Vistta CLI v${process.env.CLI_VERSION}`);
     await this[COMMAND_MAPPING[command]](command, ...args);
   }
 
@@ -67,8 +64,8 @@ export default class extends CLI {
     if(added) summary.push(`${added} Package${added > 1 ? "s" : ""} added.`);
     if(removed) summary.push(`${removed} Package${removed > 1 ? "s" : ""} removed.`);
     if(changed) summary.push(`${changed} Package${changed > 1 ? "s" : ""} changed.`);
-    if(summary.length == 0) return system.log(`\nEverything is up to date.`);
-    system.log(`\n${summary.join(" ")}`);
+    if(summary.length == 0) return console.print(`\nEverything is up to date.`);
+    console.print(`\n${summary.join(" ")}`);
     if(vulnerabilities?.total > 0) {
       const keys = Object.keys(vulnerabilities);
       let vulnerabilitiesSummary = [];
@@ -78,9 +75,9 @@ export default class extends CLI {
         const { severity, count } = vulnerabilities[key];
         if(count) vulnerabilitiesSummary.push(`${count} ${severity}`);
       }
-      system.log(`Found ${vulnerabilities.total} vulnerabilities (${vulnerabilitiesSummary.join(", ")})`);
+      console.print(`Found ${vulnerabilities.total} vulnerabilities (${vulnerabilitiesSummary.join(", ")})`);
     }
-    else system.log(`No vulnerabilities found.`);
+    else console.print(`No vulnerabilities found.`);
   }
 
   async modules(command, arg1) {
@@ -97,11 +94,11 @@ export default class extends CLI {
         await fs.writeFile(packagePath, JSON.stringify(packageObj, null, 2));
         update++;
       }
-      else if (current === wanted) system.info(`Module "${name}" has a new version (${latest})`);
-      else system.warn(`Module "${name}" is outdated (${latest})`), (valid = false);
+      else if (current === wanted) console.print(`${COLORS.CYAN}Module "${name}" has a new version (${latest})${COLORS.RESET}`);
+      else console.print(`${COLORS.YELLOW}Module "${name}" is outdated (${latest})${COLORS.RESET}`), (valid = false);
     }
 
-    if (modules.length == 0) system.log("Everything is up to date");
+    if (modules.length == 0) console.print("Everything is up to date");
     else if (update > 0) await this.npm("install");
     process.exit(valid ? 0 : -1);
   }

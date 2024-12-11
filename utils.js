@@ -41,7 +41,7 @@ export async function importEnv(filepath) {
 }
 
 export async function importCLI(command, system) {
-  const require = createRequire(import.meta.url);
+  const require = createRequire(process.cwd());
   const checked = {};
   let fallback;
   const processPackage = async (dirname, options) => {
@@ -49,7 +49,7 @@ export async function importCLI(command, system) {
     if (checked[path]) return [null, options];
     else checked[path] = true;
     const { vistta, dependencies, workspaces } = (await importJSON(path)) || {};
-    options = assign(vistta?.options || {}, options);
+    options = assign(options, vistta?.options || {});
     if (vistta?.cli?.[command])
       return [
         (await import(pathToFileURL(fs.resolve(dirname, vistta.cli[command]))))
@@ -67,11 +67,14 @@ export async function importCLI(command, system) {
     }
     const keys = Object.keys(dependencies || {});
     for (let i = 0, len = keys.length; i < len; i++) {
-      const result = await processPackage(
-        fs.dirname(require.resolve(keys[i])),
-        options
-      );
-      if (result[0]) return result;
+      try {
+        const result = await processPackage(
+          fs.dirname(require.resolve(keys[i])),
+          options
+        );
+        if (result[0]) return result;
+      }
+      catch { /* DO Nothing */ }
     }
     return [null, options];
   };
@@ -189,6 +192,18 @@ export async function incrementPackageVersion(filepath, type) {
   packageJSON.version = inc(packageJSON.version, type);
   await fs.writeFile(filepath, JSON.stringify(packageJSON, null, 2));
   return packageJSON.version;
+}
+
+export function saveCrashReport() {
+  if(!process.env.NODE_CRASH_REPORT) return;
+  const crashFolder = fs.resolve(process.cwd(), ".crash");
+  if (!fs.existsSync(crashFolder)) fs.mkdir(crashFolder);
+  const logs = console.logs;
+  let output = "";
+  for (let i = 0, len = logs.length; i < len; i++) {
+    output += logs[i].time.value + " - " + logs[i].raw.replace(/\n/gm," ") + "\n";
+  }
+  fs.writeFileSync(fs.resolve(crashFolder, Date.now() + ".log"), output);
 }
 
 export { assign, extract, remove };

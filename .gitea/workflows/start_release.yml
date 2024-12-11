@@ -10,7 +10,7 @@ jobs:
   Release:
     runs-on: ubuntu-latest
     container:
-      image: node:22
+      image: node:latest
     if: ${{ startsWith(gitea.event.pull_request.labels[0].name, 'Project/Release') && gitea.event.pull_request.milestone == null }}
     steps:
       -
