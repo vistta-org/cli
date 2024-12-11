@@ -27,7 +27,7 @@ jobs:
         run: git submodule update --remote
       - 
         name: Setup Node
-        run: npm ci
+        run: npm i
       - 
         name: "Start Release"
         uses: ./.gitea/actions/start-release
