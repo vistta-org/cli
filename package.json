@@ -1,6 +1,6 @@
 {
   "name": "@vistta/cli",
-  "version": "0.2.0",
+  "version": "0.1.0-beta",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -28,13 +28,13 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "@vistta/console": "*",
-    "@vistta/fs": "*",
-    "@vistta/utils": "*",
+    "@vistta/console": "0.2.0",
+    "@vistta/fs": "0.1.0",
+    "@vistta/utils": "0.1.1",
     "esbuild": "^0.24.0",
     "semver": "^7.6.3"
   },
   "author": "Tiago Terenas Almeida",
   "license": "CC BY-NC-ND 4.0 DEED",
-  "description": "Vistta CLI (NodeJS Loaders Adapter)"
+  "description": "Vistta CLI (NodeJS and NPM wrapper for Loaders Adapter)"
 }

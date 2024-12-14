@@ -48,16 +48,16 @@ export async function importCLI(command, system) {
     const path = fs.resolve(dirname, "package.json");
     if (checked[path]) return [null, options];
     else checked[path] = true;
-    const { vistta, dependencies, workspaces } = (await importJSON(path)) || {};
-    options = assign(options, vistta?.options || {});
-    if (vistta?.cli?.[command])
+    const { vistta: { commands, ..._options } = {}, dependencies, workspaces } = (await importJSON(path)) || {};
+    options = assign(options, _options);
+    if (commands?.[command])
       return [
-        (await import(pathToFileURL(fs.resolve(dirname, vistta.cli[command]))))
+        (await import(pathToFileURL(fs.resolve(dirname, commands[command]))))
           ?.default,
         options,
       ];
-    if (!fallback && vistta?.cli?.["default"])
-      fallback = fs.resolve(dirname, vistta.cli["default"]);
+    if (!fallback && commands?.["default"])
+      fallback = fs.resolve(dirname, commands["default"]);
     if (workspaces) {
       const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
       for (let i = 0, len = workspaceDirnames.length; i < len; i++) {
@@ -91,17 +91,17 @@ export async function importCLI(command, system) {
   return new system["default"](options);
 }
 
-export async function availableCLIs() {
+export async function availableCommands() {
   const require = createRequire(import.meta.url);
   const checked = {};
-  const commands = {};
+  const result = {};
   const processPackage = async (dirname) => {
     const path = fs.resolve(dirname, "package.json");
     if (checked[path]) return;
     else checked[path] = true;
-    const { name, vistta, dependencies, workspaces } =
+    const { name, vistta: { commands } = {}, dependencies, workspaces } =
       (await importJSON(path)) || {};
-    if (vistta?.cli) commands[name] = Object.keys(vistta.cli);
+    if (commands) result[name] = Object.keys(commands);
     if (workspaces) {
       const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
       for (let i = 0, len = workspaceDirnames.length; i < len; i++)
@@ -112,7 +112,7 @@ export async function availableCLIs() {
       await processPackage(fs.dirname(require.resolve(keys[i])));
   };
   await processPackage(process.cwd());
-  return commands;
+  return result;
 }
 
 export async function getOutdatedPackages(dirname) {
