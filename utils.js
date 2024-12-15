@@ -140,7 +140,7 @@ export async function getOutdatedPackages(dirname) {
       const { version, resolved, link } =
         packages["node_modules/" + packageName] || {};
       if (link) continue;
-      if (!version || !resolved) throw new Error(`Module ${module} not found `);
+      if (!version || !resolved) throw new Error(`Module ${packageName} not found `);
       promises.push(
         new Promise((resolve, reject) =>
           fetch(resolved.split("/-/")[0] + "/latest")
