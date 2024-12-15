@@ -47,3 +47,10 @@ jobs:
         name: Unit Tests
         working-directory: ./packages/${{ env.module }}
         run: npx vistta test
+#
+      - 
+        name: Publish Package (Gitea)
+        uses: tiagomta/npm@v1
+        with:
+          command: publish --scope vistta --registry https://git.vistta.org/api/packages/vistta/npm/ --beta
+          token: ${{ secrets.GIT_TOKEN }}
