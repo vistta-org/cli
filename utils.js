@@ -1,6 +1,5 @@
 import fs from "@vistta/fs";
 import { assign, extract, remove } from "@vistta/utils";
-import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import { satisfies, inc } from "semver";
 
@@ -41,7 +40,6 @@ export async function importEnv(filepath) {
 }
 
 export async function importCLI(command, system) {
-  const require = createRequire(process.cwd());
   const checked = {};
   let fallback;
   const processPackage = async (dirname, options) => {
@@ -69,7 +67,7 @@ export async function importCLI(command, system) {
     for (let i = 0, len = keys.length; i < len; i++) {
       try {
         const result = await processPackage(
-          fs.dirname(require.resolve(keys[i])),
+          fs.dirname(import.meta.resolve(keys[i])),
           options
         );
         if (result[0]) return result;
@@ -92,7 +90,6 @@ export async function importCLI(command, system) {
 }
 
 export async function availableCommands() {
-  const require = createRequire(import.meta.url);
   const checked = {};
   const result = {};
   const processPackage = async (dirname) => {
@@ -109,7 +106,7 @@ export async function availableCommands() {
     }
     const keys = Object.keys(dependencies || {});
     for (let i = 0, len = keys.length; i < len; i++)
-      await processPackage(fs.dirname(require.resolve(keys[i])));
+      await processPackage(fs.dirname(import.meta.resolve(keys[i])));
   };
   await processPackage(process.cwd());
   return result;
