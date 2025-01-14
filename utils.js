@@ -46,7 +46,7 @@ export async function importCLI(command, system) {
     const path = fs.resolve(dirname, "package.json");
     if (checked[path]) return [null, options];
     else checked[path] = true;
-    const { vistta: { commands, ..._options } = {}, dependencies, workspaces } = (await importJSON(path)) || {};
+    const { vistta: { commands, ..._options } = {}, dependencies, devDependencies, peerDependencies, workspaces } = (await importJSON(path)) || {};
     options = assign(options, _options);
     if (commands?.[command])
       return [
@@ -63,11 +63,11 @@ export async function importCLI(command, system) {
         if (result[0]) return result;
       }
     }
-    const keys = Object.keys(dependencies || {});
+    const keys = Object.keys(Object.assign(dependencies || {}, devDependencies || {}, peerDependencies || {}));
     for (let i = 0, len = keys.length; i < len; i++) {
       try {
         const result = await processPackage(
-          fs.dirname(import.meta.resolve(keys[i])),
+          await resolveModule(path, keys[i]),
           options
         );
         if (result[0]) return result;
@@ -96,7 +96,7 @@ export async function availableCommands() {
     const path = fs.resolve(dirname, "package.json");
     if (checked[path]) return;
     else checked[path] = true;
-    const { name, vistta: { commands } = {}, dependencies, workspaces } =
+    const { name, vistta: { commands } = {}, dependencies, devDependencies, peerDependencies, workspaces } =
       (await importJSON(path)) || {};
     if (commands) result[name] = Object.keys(commands);
     if (workspaces) {
@@ -104,9 +104,9 @@ export async function availableCommands() {
       for (let i = 0, len = workspaceDirnames.length; i < len; i++)
         await processPackage(workspaceDirnames[i]);
     }
-    const keys = Object.keys(dependencies || {});
+    const keys = Object.keys(Object.assign(dependencies || {}, devDependencies || {}, peerDependencies || {}));
     for (let i = 0, len = keys.length; i < len; i++)
-      await processPackage(fs.dirname(import.meta.resolve(keys[i])));
+      await processPackage(await resolveModule(path, keys[i]));
   };
   await processPackage(process.cwd());
   return result;
@@ -213,6 +213,14 @@ async function getProjectLock(path) {
   return await getProjectLock(newPath);
 }
 
+async function resolveModule(path, module) {
+  const cur = fs.resolve(path, "node_modules", module);
+  if (fs.existsSync(cur)) return cur;
+  const newPath = fs.resolve(path, "..");
+  if (newPath === path) throw new Error("No node_modules folder found.");
+  return await resolveModule(newPath, module);
+}
+
 async function resolveWorkspacesDirnames(workspaces) {
   const paths = [];
   for (let i = 0, len = workspaces.length; i < len; i++) {
@@ -229,3 +237,4 @@ async function resolveWorkspacesDirnames(workspaces) {
   }
   return paths;
 }
+

@@ -12,7 +12,7 @@ export class Bundler {
   constructor(arg1) {
     if(arg1 instanceof Loader) this.#loader = arg1;
     else if(arg1 instanceof CLI) this.#loader = new Loader(arg1);
-    else if(!arg1) this.#loader = new Loader(global.vistta);
+    else if(!arg1) this.#loader = new Loader(process.vistta);
     else throw new Error("Invalid first argument. Expected Loader or CLI instance.");
     this.#options = this.#loader?.options?.bundler ?? {};
   }
