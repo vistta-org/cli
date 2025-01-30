@@ -4,7 +4,7 @@ import { initialize as initializeTypescript } from "./typescript.js";
 let instance;
 
 export async function initialize(args) {
-  await initializeTypescript(args?.options?.compiler || {});
+  args.options.compiler = await initializeTypescript(args?.options?.compiler || {});
   if (args.port) {
     const shared = {};
     const events = {};

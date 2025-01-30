@@ -193,12 +193,12 @@ export async function incrementPackageVersion(filepath, type) {
 
 export function saveCrashReport() {
   if(!process.env.NODE_CRASH_REPORT) return;
-  const crashFolder = fs.resolve(process.cwd(), ".crash");
+  const crashFolder = fs.resolve(process.cwd(), ".logs");
   if (!fs.existsSync(crashFolder)) fs.mkdir(crashFolder);
   const logs = console.logs;
   let output = "";
   for (let i = 0, len = logs.length; i < len; i++) {
-    output += logs[i].time.value + " - " + logs[i].toString().replace(/\n/gm," ") + "\n";
+    output += logs[i].time.toISOString() + " - " + logs[i].toString().replace(/\n/gm," ") + "\n";
   }
   fs.writeFileSync(fs.resolve(crashFolder, Date.now() + ".log"), output);
 }

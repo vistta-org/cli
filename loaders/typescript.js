@@ -6,29 +6,13 @@ export const tsconfig = { compilerOptions: {} };
 export async function initialize(compilerOptions) {
   await transferProperties(
     tsconfig,
-    loadTSConfig(fs.resolve(import.meta.dirname, "../")),
+    await loadTSConfig(fs.resolve(import.meta.dirname, "../")),
   );
-  await transferProperties(tsconfig, loadTSConfig(process.cwd()));
+  await transferProperties(tsconfig, await loadTSConfig(process.cwd()));
   await transferProperties(tsconfig, { compilerOptions });
   tsconfig.compilerOptions.incremental = false;
   delete tsconfig.compilerOptions.moduleResolution;
-}
-
-export async function resolve(path, cwd) {
-  const paths = Object.keys(tsconfig?.compilerOptions?.paths || {});
-  for (let i = 0, len = paths?.length || 0; i < len; i++) {
-    const cur = paths[i];
-    const resolved = tsconfig?.compilerOptions?.paths[cur][0];
-    if (cur.endsWith("*")) {
-      const regex = cur.slice(0, -1);
-      if (new RegExp(`^${regex}.*`).test(path) && resolved.endsWith("*"))
-        return path.replace(
-          new RegExp(`^${regex}`),
-          fs.resolve(cwd, resolved.slice(0, -1)) + "\\",
-        );
-    } else if (cur === path) return fs.resolve(cwd, resolved);
-  }
-  return path;
+  return tsconfig.compilerOptions;
 }
 
 export async function load(source) {
