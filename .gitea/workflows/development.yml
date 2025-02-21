@@ -18,14 +18,14 @@ jobs:
         with:
           repository: vistta/workspace
           ref: ${{ gitea.event.pull_request.head.ref }}
-          token: ${{ secrets.GIT_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           fetch-depth: 0
           submodules: true
       - 
         name: Close Issues
         uses: tiagomta/gitea@v1
         with:
-          token: ${{ secrets.GIT_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           working-directory: ./packages/${{ env.module }}
           command: issues close --fromCommit --milestone ${{ gitea.event.pull_request.milestone.id }}
       - 
@@ -68,4 +68,4 @@ jobs:
         uses: tiagomta/npm@v1
         with:
           command: publish --scope vistta --registry https://git.vistta.org/api/packages/vistta/npm/ --tag snapshot
-          token: ${{ secrets.GIT_TOKEN }}
+          token: ${{ secrets.TOKEN }}
