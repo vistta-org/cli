@@ -31,7 +31,7 @@ jobs:
         id: npm
         uses: tiagomta/npm@v1
         with:
-          command: version ${{ inputs.type }} --email devops@vistta.org
+          command: version ${{ inputs.type }} --email devops@vistta.org --commit
           token: ${{ secrets.TOKEN }}
       - 
         name: Create Milestone
