@@ -16,7 +16,7 @@ jobs:
         name: Checkout
         uses: tiagomta/checkout@v1
         with:
-          repository: vistta/vistta
+          repository: vistta/workspace
           ref: ${{ gitea.event.pull_request.head.ref }}
           token: ${{ secrets.GIT_TOKEN }}
           fetch-depth: 0
