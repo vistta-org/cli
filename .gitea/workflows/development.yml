@@ -62,7 +62,7 @@ jobs:
         name: Snapshot Release
         uses: tiagomta/npm@v1
         with:
-          command: version snapshot $GITEA_ACTION_RUN_ID --email devops@vistta.org
+          command: version snapshot ${{ gitea.run_id }} --email devops@vistta.org
       - 
         name: Publish Package (Gitea)
         uses: tiagomta/npm@v1
