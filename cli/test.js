@@ -111,19 +111,37 @@ export default class extends DefaultCLI {
     this.#runningCounter--;
   }
 
-  expect(target) {
+  expect(target, label) {
     return {
-      toEqual: (value) => {
+      toEqual: (value, unit = "") => {
         if (target === value) return;
-        throw new Error(`expected ${target} to equal ${value}`);
+        throw new Error(
+          `expected ${label ? label + "(" + target + ")" : target} to equal ${value}${unit}`
+        );
+      },
+      toBeLessThan: (value, unit = "") => {
+        if (target < value) return;
+        throw new Error(
+          `expected ${label ? label + "(" + target + ")" : target} to be less than ${value}${unit}`
+        );
+      },
+      toBeGreaterThan: (value, unit = "") => {
+        if (target > value) return;
+        throw new Error(
+          `expected ${label ? label + "(" + target + ")" : target} to be greater than ${value}${unit}`
+        );
       },
       toInclude: (value) => {
         if (target.indexOf(value) > -1) return;
-        throw new Error(`expected ${target} to include ${value}`);
+        throw new Error(
+          `expected ${label ? label + "(" + target + ")" : target} to include ${value}`
+        );
       },
       toMatch: (regex) => {
         if (target.match(new RegExp(regex))) return;
-        throw new Error(`expected ${target} to match ${regex}`);
+        throw new Error(
+          `expected ${label ? label + "(" + target + ")" : target} to match ${regex}`
+        );
       },
     };
   }
