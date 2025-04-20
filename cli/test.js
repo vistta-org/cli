@@ -24,10 +24,16 @@ export default class extends DefaultCLI {
   }
 
   help() {
-    console.print("Runs all the tests files that match the pattern/s in the current project");
+    console.print(
+      "Runs all the tests files that match the pattern/s in the current project"
+    );
     console.print("\nUsage:");
-    console.print("vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project");
-    console.print("vistta test --filter=\"pattern\"\tRuns all the tests that match the filter pattern/s in the current project");
+    console.print(
+      "vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project"
+    );
+    console.print(
+      'vistta test --filter="pattern"\tRuns all the tests that match the filter pattern/s in the current project'
+    );
     console.print("vistta test --only\tRuns all the tests that have the only");
   }
 
@@ -36,17 +42,19 @@ export default class extends DefaultCLI {
     this.#options = options;
     if (args.length === 0) args = ["**/*.test.js", "**/*.test.ts"];
     for (let i = 0, len = args.length; i < len; i++)
-      args[i] = fs.resolve(cwd, args[i])
+      args[i] = fs.resolve(cwd, args[i]);
     const entries = fs.glob(args);
     let entry = (await entries.next())?.value;
     if (!process.env.NODE_DEBUG) console.disable();
     while (entry) {
       try {
         process.chdir(fs.dirname(entry));
-        if (!entry.includes("\\node_modules\\")) await import(fs.resolve(entry));
+        if (!entry.includes("\\node_modules\\"))
+          await import(fs.resolve(entry));
         await this.#await();
+      } catch {
+        this.#failed = true;
       }
-      catch { this.#failed = true; }
       entry = (await entries.next())?.value;
     }
     if (!process.env.NODE_DEBUG) console.enable();
@@ -55,7 +63,7 @@ export default class extends DefaultCLI {
       const { name, tests } = this.#results[i];
       if (name) output += `\n${name}\n`;
       const [results, passing, total, time] = processTests(tests);
-      output += `${results}${passing === total ? COLORS.GREEN : COLORS.RED}${passing}/${total} passing ${COLORS.RESET + COLORS.DIM}(${time}ms)${COLORS.RESET}\n`
+      output += `${results}${passing === total ? COLORS.GREEN : COLORS.RED}${passing}/${total} passing ${COLORS.RESET + COLORS.DIM}(${time}ms)${COLORS.RESET}\n`;
     }
     console.print(output);
     process.exit(this.#failed ? -1 : 0);
@@ -68,7 +76,9 @@ export default class extends DefaultCLI {
     try {
       const value = callback();
       if (value instanceof Promise) await value;
-    } catch { /* Do Nothing */ }
+    } catch {
+      /* Do Nothing */
+    }
     this.#results.push(this.#suite);
     this.#suite = null;
     this.#runningCounter--;
@@ -76,9 +86,11 @@ export default class extends DefaultCLI {
 
   async test(only, name, callback) {
     if (
-      (this.#options.filter && !name.match(new RegExp(this.#options.filter, "i"))) ||
+      (this.#options.filter &&
+        !name.match(new RegExp(this.#options.filter, "i"))) ||
       (this.#options.only && !(only || this.#suite?.only))
-    ) return;
+    )
+      return;
     this.#runningCounter++;
     const test = { name };
     test.start = performance();
@@ -86,8 +98,8 @@ export default class extends DefaultCLI {
     else this.#results.push({ tests: [test], time: test.time });
 
     try {
-      const value = callback();
-      if (value instanceof Promise) await value
+      test.result = callback();
+      if (test.result instanceof Promise) test.result = await test.result;
       test.status = "pass";
       test.end = performance();
     } catch (error) {
@@ -112,8 +124,8 @@ export default class extends DefaultCLI {
       toMatch: (regex) => {
         if (target.match(new RegExp(regex))) return;
         throw new Error(`expected ${target} to match ${regex}`);
-      }
-    }
+      },
+    };
   }
 
   #await() {
@@ -121,7 +133,7 @@ export default class extends DefaultCLI {
       const timer = () => {
         if (this.#runningCounter === 0) resolve();
         else setTimeout(timer, 500);
-      }
+      };
       timer();
     });
   }
@@ -133,19 +145,19 @@ function processTests(tests) {
   let acc = "";
   let first, last;
   for (let i = 0, len = tests?.length || 0; i < len; i++) {
-    const { name, status, start, end, error } = tests[i];
+    const { name, status, start, end, result, error } = tests[i];
     if (!first || start < first) first = start;
     if (!last || end > last) last = end;
     if (status === "pass") {
-      acc += `  ${COLORS.GREEN}✔  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n`;
+      acc += `  ${COLORS.GREEN}✔  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n${typeof result === "string" ? "\t" + COLORS.GREEN + result + COLORS.RESET + "\n" : ""}`;
       passing++;
-    }
-    else acc += `  ${COLORS.RED}✖  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n\t${COLORS.RED + error + COLORS.RESET}\n`;
+    } else
+      acc += `  ${COLORS.RED}✖  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n\t${COLORS.RED + error + COLORS.RESET}\n`;
     total++;
   }
   return [acc, passing, total, Math.round(last - first)];
 }
 
 function performance(time = process.hrtime()) {
-  return (time[0] * 1000) + (time[1] / 1e6);
+  return time[0] * 1000 + time[1] / 1e6;
 }
