@@ -29,7 +29,7 @@ export default class extends CLI {
   }
 
   async help() {
-    const moduleCLIs = await (await import("../utils.js")).availableCommands();
+    const moduleCLIs = await (await import("../utils.js"))?.availableCommands();
     console.print("vistta <command/script>\n\nAvailable commands:");
     console.print("\tbundle, package, install, add, uninstall,");
     console.print("\tremove, run, update, patch, outdated, test");

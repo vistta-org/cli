@@ -14,7 +14,7 @@ export const ENABLED_NODE_OPTIONS = {
   "--trace-deprecation": true,
   "--max-old-space-size": true,
   "--inspect": true,
-  "--inspect-brk": true
+  "--inspect-brk": true,
 };
 
 export async function importJSON(filepath) {
@@ -46,7 +46,13 @@ export async function importCLI(command, system) {
     const path = fs.resolve(dirname, "package.json");
     if (checked[path]) return [null, options];
     else checked[path] = true;
-    const { vistta: { commands, ..._options } = {}, dependencies, devDependencies, peerDependencies, workspaces } = (await importJSON(path)) || {};
+    const {
+      vistta: { commands, ..._options } = {},
+      dependencies,
+      devDependencies,
+      peerDependencies,
+      workspaces,
+    } = (await importJSON(path)) || {};
     options = assign(options, _options);
     if (commands?.[command])
       return [
@@ -63,7 +69,13 @@ export async function importCLI(command, system) {
         if (result[0]) return result;
       }
     }
-    const keys = Object.keys(Object.assign(dependencies || {}, devDependencies || {}, peerDependencies || {}));
+    const keys = Object.keys(
+      Object.assign(
+        dependencies || {},
+        devDependencies || {},
+        peerDependencies || {}
+      )
+    );
     for (let i = 0, len = keys.length; i < len; i++) {
       try {
         const result = await processPackage(
@@ -71,8 +83,9 @@ export async function importCLI(command, system) {
           options
         );
         if (result[0]) return result;
+      } catch {
+        /* DO Nothing */
       }
-      catch { /* DO Nothing */ }
     }
     return [null, options];
   };
@@ -96,17 +109,34 @@ export async function availableCommands() {
     const path = fs.resolve(dirname, "package.json");
     if (checked[path]) return;
     else checked[path] = true;
-    const { name, vistta: { commands } = {}, dependencies, devDependencies, peerDependencies, workspaces } =
-      (await importJSON(path)) || {};
+    const {
+      name,
+      vistta: { commands } = {},
+      dependencies,
+      devDependencies,
+      peerDependencies,
+      workspaces,
+    } = (await importJSON(path)) || {};
     if (commands) result[name] = Object.keys(commands);
     if (workspaces) {
       const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
       for (let i = 0, len = workspaceDirnames.length; i < len; i++)
         await processPackage(workspaceDirnames[i]);
     }
-    const keys = Object.keys(Object.assign(dependencies || {}, devDependencies || {}, peerDependencies || {}));
-    for (let i = 0, len = keys.length; i < len; i++)
-      await processPackage(await resolveModule(path, keys[i]));
+    const keys = Object.keys(
+      Object.assign(
+        dependencies || {},
+        devDependencies || {},
+        peerDependencies || {}
+      )
+    );
+    for (let i = 0, len = keys.length; i < len; i++) {
+      try {
+        await processPackage(await resolveModule(path, keys[i]));
+      } catch {
+        /* DO Nothing */
+      }
+    }
   };
   await processPackage(process.cwd());
   return result;
@@ -128,7 +158,10 @@ export async function getOutdatedPackages(dirname) {
     if (!(workspaces?.length > 0)) return;
     const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
     for (let i = 0, len = workspaceDirnames.length; i < len; i++)
-      await processPackage(fs.resolve(workspaceDirnames[i], "package.json"), true);
+      await processPackage(
+        fs.resolve(workspaceDirnames[i], "package.json"),
+        true
+      );
   }
   async function fetchPackageUpdates(path, deps = {}, dev) {
     const keys = Object.keys(deps);
@@ -137,7 +170,8 @@ export async function getOutdatedPackages(dirname) {
       const { version, resolved, link } =
         packages["node_modules/" + packageName] || {};
       if (link) continue;
-      if (!version || !resolved) throw new Error(`Module ${packageName} not found `);
+      if (!version || !resolved)
+        throw new Error(`Module ${packageName} not found `);
       promises.push(
         new Promise((resolve, reject) =>
           fetch(resolved.split("/-/")[0] + "/latest")
@@ -192,13 +226,17 @@ export async function incrementPackageVersion(filepath, type) {
 }
 
 export function saveCrashReport() {
-  if(!process.env.NODE_CRASH_REPORT) return;
+  if (!process.env.NODE_CRASH_REPORT) return;
   const crashFolder = fs.resolve(process.cwd(), ".logs");
   if (!fs.existsSync(crashFolder)) fs.mkdir(crashFolder);
   const logs = console.logs;
   let output = "";
   for (let i = 0, len = logs.length; i < len; i++) {
-    output += logs[i].time.toISOString() + " - " + logs[i].toString().replace(/\n/gm," ") + "\n";
+    output +=
+      logs[i].time.toISOString() +
+      " - " +
+      logs[i].toString().replace(/\n/gm, " ") +
+      "\n";
   }
   fs.writeFileSync(fs.resolve(crashFolder, Date.now() + ".log"), output);
 }
@@ -237,4 +275,3 @@ async function resolveWorkspacesDirnames(workspaces) {
   }
   return paths;
 }
-
