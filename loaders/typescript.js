@@ -6,7 +6,7 @@ export const tsconfig = { compilerOptions: {} };
 export async function initialize(compilerOptions) {
   await transferProperties(
     tsconfig,
-    await loadTSConfig(fs.resolve(import.meta.dirname, "../")),
+    await loadTSConfig(fs.resolve(import.meta.dirname, "../"))
   );
   await transferProperties(tsconfig, await loadTSConfig(process.cwd()));
   await transferProperties(tsconfig, { compilerOptions });
@@ -29,7 +29,7 @@ export async function load(source) {
       target: "esnext",
     });
   } catch (e) {
-    return [e];
+    return { errors: [e] };
   }
 }
 
@@ -39,7 +39,7 @@ async function loadTSConfig(folder) {
   try {
     return (
       JSON.parse(
-        await fs.readFile(fs.resolve(folder, "./tsconfig.json"), "utf-8"),
+        await fs.readFile(fs.resolve(folder, "./tsconfig.json"), "utf-8")
       ) || {}
     );
   } catch {

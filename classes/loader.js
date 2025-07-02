@@ -81,6 +81,11 @@ export class Loader {
       resources,
       files = [],
     } = await loader.call(this, await fs.readFile(path, "utf-8"), options);
+    if (!code)
+      await loader.call(this, await fs.readFile(path, "utf-8"), {
+        ...options,
+        debug: true,
+      });
     if (errors?.length)
       throw new Loader.Error(loader.name, `${errors.join("\n")}`);
     warnings?.forEach((warning) =>
@@ -137,7 +142,7 @@ export class Loader {
 
 function createCompilerPathResolver(compiler) {
   const paths = Object.keys(compiler?.paths || {});
-  return async(path, cwd) => {
+  return async (path, cwd) => {
     for (let i = 0, len = paths?.length || 0; i < len; i++) {
       const cur = paths[i];
       const resolved = compiler?.paths[cur][0];
@@ -151,5 +156,5 @@ function createCompilerPathResolver(compiler) {
       } else if (cur === path) return fs.resolve(cwd, resolved);
     }
     return path;
-  }
+  };
 }

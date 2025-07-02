@@ -31,8 +31,8 @@
     "@vistta/console": "*",
     "@vistta/fs": "*",
     "@vistta/utils": "*",
-    "esbuild": "^0.24.0",
-    "semver": "^7.6.3"
+    "esbuild": "^0.25.5",
+    "semver": "^7.7.2"
   },
   "author": "Tiago Terenas Almeida",
   "license": "CC BY-NC-ND 4.0 DEED",
