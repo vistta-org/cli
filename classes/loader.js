@@ -141,11 +141,12 @@ export class Loader {
 }
 
 function createCompilerPathResolver(compiler) {
-  const paths = Object.keys(compiler?.paths || {});
+  const paths = Object.assign({ "@/*": ["./*"] }, compiler?.paths || {});
+  const pathKeys = Object.keys(paths);
   return async (path, cwd) => {
-    for (let i = 0, len = paths?.length || 0; i < len; i++) {
-      const cur = paths[i];
-      const resolved = compiler?.paths[cur][0];
+    for (let i = 0, len = pathKeys?.length || 0; i < len; i++) {
+      const cur = pathKeys[i];
+      const resolved = paths[cur][0];
       if (cur.endsWith("*")) {
         const regex = cur.slice(0, -1);
         if (new RegExp(`^${regex}.*`).test(path) && resolved.endsWith("*"))
