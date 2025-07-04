@@ -28,9 +28,9 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "@vistta/console": "*",
-    "@vistta/fs": "*",
-    "@vistta/utils": "*",
+    "@vistta/console": "latest",
+    "@vistta/fs": "latest",
+    "@vistta/utils": "latest",
     "esbuild": "^0.25.5",
     "semver": "^7.7.2"
   },

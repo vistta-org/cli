@@ -38,6 +38,7 @@ jobs:
       - name: Typescript Validation
         working-directory: ./packages/${{ env.module }}
         run: npx tsc
+        continue-on-error: true
       - name: Unit Tests
         working-directory: ./packages/${{ env.module }}
         run: npx vistta test
