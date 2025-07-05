@@ -16,7 +16,7 @@ export class Loader {
   #loaders;
   #resolve;
   #options;
-  #compiler;
+  #customPathResolve;
 
   get loaders() {
     return this.#loaders;
@@ -30,9 +30,10 @@ export class Loader {
     this.#loaders = loaders;
     this.#resolve = resolve;
     this.#options = options;
-    this.#compiler = {
-      resolve: createCompilerPathResolver(options.compiler),
-    };
+    this.#customPathResolve = createCustomPathResolver(
+      options?.paths || {},
+      options?.compiler?.paths || {}
+    );
   }
 
   async resolve(specifier, context, nextResolve, options) {
@@ -44,7 +45,7 @@ export class Loader {
       return nextResolve(specifier, context);
     }
 
-    specifier = await this.#compiler.resolve(specifier, CWD + "/");
+    specifier = await this.#customPathResolve(specifier, CWD + "/");
     if (!/^(\w:|\.?\.?\/)/.test(specifier))
       return nextResolve(specifier, context);
     if (specifier?.startsWith("file://")) specifier = fileURLToPath(specifier);
@@ -140,19 +141,21 @@ export class Loader {
   }
 }
 
-function createCompilerPathResolver(compiler) {
-  const paths = Object.assign({ "@/*": ["./*"] }, compiler?.paths || {});
+function createCustomPathResolver(...paths) {
+  paths = Object.assign({ "@/*": ["./*"] }, ...paths);
   const pathKeys = Object.keys(paths);
+  const pathKeysLen = pathKeys.length;
   return async (path, cwd) => {
-    for (let i = 0, len = pathKeys?.length || 0; i < len; i++) {
+    for (let i = 0; i < pathKeysLen; i++) {
       const cur = pathKeys[i];
       const resolved = paths[cur][0];
       if (cur.endsWith("*")) {
         const regex = cur.slice(0, -1);
         if (new RegExp(`^${regex}.*`).test(path) && resolved.endsWith("*"))
-          return path.replace(
-            new RegExp(`^${regex}`),
-            fs.resolve(cwd, resolved.slice(0, -1)) + "\\"
+          return fs.resolve(
+            cwd,
+            resolved.slice(0, -1),
+            path.replace(new RegExp(`^${regex}`), "")
           );
       } else if (cur === path) return fs.resolve(cwd, resolved);
     }
