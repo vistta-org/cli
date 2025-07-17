@@ -30,10 +30,7 @@ export class Loader {
     this.#loaders = loaders;
     this.#resolve = resolve;
     this.#options = options;
-    this.#customPathResolve = createCustomPathResolver(
-      options?.paths || {},
-      options?.compiler?.paths || {}
-    );
+    this.#customPathResolve = createCustomPathResolver(options?.paths || {}, options?.compiler?.paths || {});
   }
 
   async resolve(specifier, context, nextResolve, options) {
@@ -46,8 +43,7 @@ export class Loader {
     }
 
     specifier = await this.#customPathResolve(specifier, CWD + "/");
-    if (!/^(\w:|\.?\.?\/)/.test(specifier))
-      return nextResolve(specifier, context);
+    if (!/^(\w:|\.?\.?\/)/.test(specifier)) return nextResolve(specifier, context);
     if (specifier?.startsWith("file://")) specifier = fileURLToPath(specifier);
     specifier = this.#find(parentURL, specifier);
 
@@ -58,40 +54,28 @@ export class Loader {
 
     const params = options.toString();
     specifier = pathToFileURL(specifier).href;
-    if (params.length > 0)
-      return nextResolve(`${specifier}?${params}`, context);
+    if (params.length > 0) return nextResolve(`${specifier}?${params}`, context);
     return nextResolve(specifier, context);
   }
 
   async load(url, context, nextLoad) {
     if (isBuiltin(url)) return nextLoad(url, context);
     const { ...options } = context?.importAttributes || {};
-    url = options.bundler
-      ? pathToFileURL(url.split("?")[0]).href
-      : url.split("?")[0];
+    url = options.bundler ? pathToFileURL(url.split("?")[0]).href : url.split("?")[0];
     const path = fileURLToPath(url);
     const extension = fs.extname(path).slice(1);
     const loader = await this.#resolveLoader(extension, options.type);
     if (!loader) return nextLoad(url, context);
     options.path = path;
     options.extension = fs.extname(url).slice(1);
-    const {
-      code,
-      warnings,
-      errors,
-      resources,
-      files = [],
-    } = await loader.call(this, await fs.readFile(path, "utf-8"), options);
+    const { code, warnings, errors, resources, files = [] } = await loader.call(this, await fs.readFile(path, "utf-8"), options);
     if (!code)
       await loader.call(this, await fs.readFile(path, "utf-8"), {
         ...options,
         debug: true,
       });
-    if (errors?.length)
-      throw new Loader.Error(loader.name, `${errors.join("\n")}`);
-    warnings?.forEach((warning) =>
-      console.warn(`${loader.name} Loader Warning: ${warning}\n`)
-    );
+    if (errors?.length) throw new Loader.Error(loader.name, `${errors.join("\n")}`);
+    warnings?.forEach((warning) => console.warn(`${loader.name} Loader Warning: ${warning}\n`));
     return {
       format: "module",
       shortCircuit: true,
@@ -102,14 +86,10 @@ export class Loader {
   }
 
   async #resolveLoader(extension, type = FALLBACK) {
-    if (type === FALLBACK && ["js", "mjs", "cjs"].includes(extension))
-      return null;
+    if (type === FALLBACK && ["js", "mjs", "cjs"].includes(extension)) return null;
     const loader = this.#loaders[type]?.[extension];
     if (!loader) {
-      if (extension === FALLBACK)
-        throw new TypeError(
-          `Import attribute "type" with value "${type}" is not supported`
-        );
+      if (extension === FALLBACK) throw new TypeError(`Import attribute "type" with value "${type}" is not supported`);
       else return await this.#resolveLoader(FALLBACK, type);
     }
     if (!loader?.call) {
@@ -120,11 +100,7 @@ export class Loader {
   }
 
   #find(cwd = process.cwd(), specifier) {
-    if (!fs.isAbsolute(specifier))
-      specifier = fs.resolve(
-        cwd?.startsWith("file://") ? fs.dirname(cwd) : cwd,
-        specifier
-      );
+    if (!fs.isAbsolute(specifier)) specifier = fs.resolve(cwd?.startsWith("file://") ? fs.dirname(cwd) : cwd, specifier);
     const len = this.#resolve.length;
     if (fs.existsSync(specifier)) {
       if (!fs.isDirectory(specifier)) return specifier;
@@ -152,11 +128,7 @@ function createCustomPathResolver(...paths) {
       if (cur.endsWith("*")) {
         const regex = cur.slice(0, -1);
         if (new RegExp(`^${regex}.*`).test(path) && resolved.endsWith("*"))
-          return fs.resolve(
-            cwd,
-            resolved.slice(0, -1),
-            path.replace(new RegExp(`^${regex}`), "")
-          );
+          return fs.resolve(cwd, resolved.slice(0, -1), path.replace(new RegExp(`^${regex}`), ""));
       } else if (cur === path) return fs.resolve(cwd, resolved);
     }
     return path;

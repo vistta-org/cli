@@ -1,8 +1,8 @@
-import { exec } from "node:child_process";
-import fs from "@vistta/fs";
-import { CLI } from "../index.js";
-import { importJSON, getOutdatedPackages } from "../utils.js";
 import { COLORS } from "@vistta/console";
+import fs from "@vistta/fs";
+import { exec } from "node:child_process";
+import { CLI } from "../index.js";
+import { getOutdatedPackages, importJSON } from "../utils.js";
 
 const COMMAND_MAPPING = {
   i: "npm",
@@ -26,31 +26,23 @@ export default class extends CLI {
     switch (command) {
       case "install":
       case "add":
-        console.print(
-          "Installs a package and any packages that it depends on."
-        );
+        console.print("Installs a package and any packages that it depends on.");
         console.print("\nUsage:");
         console.print("vistta install/add [package] [--prod]");
         break;
       case "uninstall":
       case "remove":
-        console.print(
-          "Uninstalls a package, removing it from the package.json file."
-        );
+        console.print("Uninstalls a package, removing it from the package.json file.");
         console.print("\nUsage:");
         console.print("vistta uninstall/remove <package>");
         break;
       case "update":
-        console.print(
-          "Updates the version of outdated modules to the latest version."
-        );
+        console.print("Updates the version of outdated modules to the latest version.");
         console.print("\nUsage:");
         console.print("vistta update [module]");
         break;
       case "patch":
-        console.print(
-          "Updates the version of outdated modules to the latest patch version."
-        );
+        console.print("Updates the version of outdated modules to the latest patch version.");
         console.print("\nUsage:");
         console.print("vistta patch [module]");
         break;
@@ -69,24 +61,14 @@ export default class extends CLI {
   }
 
   async npm(command, ...args) {
-    if ((command === "uninstall" || command === "remove") && args.length === 0)
-      return this.help(command);
-    const {
-      added = 0,
-      removed = 0,
-      changed = 0,
-      audit: { vulnerabilities = {} } = {},
-      error,
-    } = (await npm(command, ...args)) || {};
+    if ((command === "uninstall" || command === "remove") && args.length === 0) return this.help(command);
+    const { added = 0, removed = 0, changed = 0, audit: { vulnerabilities = {} } = {}, error } = (await npm(command, ...args)) || {};
     if (error) return console.print(COLORS.RED + error.summary + COLORS.RESET);
     const summary = [];
     if (added) summary.push(`${added} Package${added > 1 ? "s" : ""} added.`);
-    if (removed)
-      summary.push(`${removed} Package${removed > 1 ? "s" : ""} removed.`);
-    if (changed)
-      summary.push(`${changed} Package${changed > 1 ? "s" : ""} changed.`);
-    if (summary.length == 0)
-      return console.print(`Everything is up to date.`);
+    if (removed) summary.push(`${removed} Package${removed > 1 ? "s" : ""} removed.`);
+    if (changed) summary.push(`${changed} Package${changed > 1 ? "s" : ""} changed.`);
+    if (summary.length == 0) return console.print(`Everything is up to date.`);
     console.print(`${summary.join(" ")}`);
     if (vulnerabilities?.total > 0) {
       const keys = Object.keys(vulnerabilities);
@@ -97,9 +79,7 @@ export default class extends CLI {
         const { severity, count } = vulnerabilities[key];
         if (count) vulnerabilitiesSummary.push(`${count} ${severity}`);
       }
-      console.print(
-        `Found ${vulnerabilities.total} vulnerabilities (${vulnerabilitiesSummary.join(", ")})`
-      );
+      console.print(`Found ${vulnerabilities.total} vulnerabilities (${vulnerabilitiesSummary.join(", ")})`);
     } else console.print(`No vulnerabilities found.`);
   }
 
@@ -108,31 +88,16 @@ export default class extends CLI {
     let valid = true;
     let update = 0;
     for (let i = 0, len = modules.length; i < len; i++) {
-      const {
-        name,
-        package: packagePath,
-        current,
-        wanted,
-        latest,
-        dev,
-      } = modules[i];
+      const { name, package: packagePath, current, wanted, latest, dev } = modules[i];
       if (command === "patch" || command === "update") {
         if (command === "patch" && current === wanted) continue;
         if (arg1 && name !== arg1) continue;
         const packageObj = await importJSON(packagePath);
-        packageObj[dev ? "devDependencies" : "dependencies"][name] =
-          "^" + (command === "patch" ? wanted : latest);
+        packageObj[dev ? "devDependencies" : "dependencies"][name] = "^" + (command === "patch" ? wanted : latest);
         await fs.writeFile(packagePath, JSON.stringify(packageObj, null, 2));
         update++;
-      } else if (current === wanted)
-        console.print(
-          `${COLORS.CYAN}Module "${name}" has a new version (${latest})${COLORS.RESET}`
-        );
-      else
-        console.print(
-          `${COLORS.YELLOW}Module "${name}" is outdated (${latest})${COLORS.RESET}`
-        ),
-          (valid = false);
+      } else if (current === wanted) console.print(`${COLORS.CYAN}Module "${name}" has a new version (${latest})${COLORS.RESET}`);
+      else (console.print(`${COLORS.YELLOW}Module "${name}" is outdated (${latest})${COLORS.RESET}`), (valid = false));
     }
 
     if (modules.length == 0) console.print("Everything is up to date");
@@ -170,7 +135,7 @@ function npm(...args) {
             },
           });
         }
-      }
-    )
+      },
+    ),
   );
 }

@@ -40,7 +40,7 @@ export class CLI {
 
   parse(args) {
     const result = [[], {}];
-    for(let i = 0, len = args.length; i < len; i++) {
+    for (let i = 0, len = args.length; i < len; i++) {
       const [option, value] = args[i].toLowerCase().split("=");
       if (option.startsWith("--")) result[1][option.slice(2)] = evaluate(value);
       else result[0].push(args[i]);

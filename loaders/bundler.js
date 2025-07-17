@@ -6,7 +6,8 @@ export async function load(_, { path, ...options }) {
   remove(options, "type", "extension");
   const { code, files, resources, errors, warnings } = await new Bundler(this).run(path, options);
   return {
-    code: `export const code = ${JSON.stringify(code)}; ` +
+    code:
+      `export const code = ${JSON.stringify(code)}; ` +
       `export const files = ${JSON.stringify(files)}; ` +
       `export const resources = ${JSON.stringify(resources)}; ` +
       `export const errors = ${JSON.stringify(errors)}; ` +

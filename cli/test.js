@@ -1,5 +1,5 @@
-import fs from "@vistta/fs";
 import { COLORS } from "@vistta/console";
+import fs from "@vistta/fs";
 import { default as DefaultCLI } from "./default.js";
 
 const cwd = process.cwd();
@@ -24,16 +24,10 @@ export default class extends DefaultCLI {
   }
 
   help() {
-    console.print(
-      "Runs all the tests files that match the pattern/s in the current project"
-    );
+    console.print("Runs all the tests files that match the pattern/s in the current project");
     console.print("\nUsage:");
-    console.print(
-      "vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project"
-    );
-    console.print(
-      'vistta test --filter="pattern"\tRuns all the tests that match the filter pattern/s in the current project'
-    );
+    console.print("vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project");
+    console.print('vistta test --filter="pattern"\tRuns all the tests that match the filter pattern/s in the current project');
     console.print("vistta test --only\tRuns all the tests that have the only");
   }
 
@@ -41,16 +35,14 @@ export default class extends DefaultCLI {
     let [args, options] = this.parse(argv);
     this.#options = options;
     if (args.length === 0) args = ["**/*.test.js", "**/*.test.ts"];
-    for (let i = 0, len = args.length; i < len; i++)
-      args[i] = fs.resolve(cwd, args[i]);
+    for (let i = 0, len = args.length; i < len; i++) args[i] = fs.resolve(cwd, args[i]);
     const entries = fs.glob(args);
     let entry = (await entries.next())?.value;
     if (!process.env.NODE_DEBUG) console.disable();
     while (entry) {
       try {
         process.chdir(fs.dirname(entry));
-        if (!entry.includes("\\node_modules\\"))
-          await import(fs.resolve(entry));
+        if (!entry.includes("\\node_modules\\")) await import(fs.resolve(entry));
         await this.#await();
       } catch {
         this.#failed = true;
@@ -85,12 +77,7 @@ export default class extends DefaultCLI {
   }
 
   async test(only, name, callback) {
-    if (
-      (this.#options.filter &&
-        !name.match(new RegExp(this.#options.filter, "i"))) ||
-      (this.#options.only && !(only || this.#suite?.only))
-    )
-      return;
+    if ((this.#options.filter && !name.match(new RegExp(this.#options.filter, "i"))) || (this.#options.only && !(only || this.#suite?.only))) return;
     this.#runningCounter++;
     const test = { name };
     test.start = performance();
@@ -115,33 +102,23 @@ export default class extends DefaultCLI {
     return {
       toEqual: (value, unit = "") => {
         if (target === value) return;
-        throw new Error(
-          `expected ${label ? label + "(" + target + ")" : target} to equal ${value}${unit}`
-        );
+        throw new Error(`expected ${label ? label + "(" + target + ")" : target} to equal ${value}${unit}`);
       },
       toBeLessThan: (value, unit = "") => {
         if (target < value) return;
-        throw new Error(
-          `expected ${label ? label + "(" + target + ")" : target} to be less than ${value}${unit}`
-        );
+        throw new Error(`expected ${label ? label + "(" + target + ")" : target} to be less than ${value}${unit}`);
       },
       toBeGreaterThan: (value, unit = "") => {
         if (target > value) return;
-        throw new Error(
-          `expected ${label ? label + "(" + target + ")" : target} to be greater than ${value}${unit}`
-        );
+        throw new Error(`expected ${label ? label + "(" + target + ")" : target} to be greater than ${value}${unit}`);
       },
       toInclude: (value) => {
         if (target.indexOf(value) > -1) return;
-        throw new Error(
-          `expected ${label ? label + "(" + target + ")" : target} to include ${value}`
-        );
+        throw new Error(`expected ${label ? label + "(" + target + ")" : target} to include ${value}`);
       },
       toMatch: (regex) => {
         if (target.match(new RegExp(regex))) return;
-        throw new Error(
-          `expected ${label ? label + "(" + target + ")" : target} to match ${regex}`
-        );
+        throw new Error(`expected ${label ? label + "(" + target + ")" : target} to match ${regex}`);
       },
     };
   }

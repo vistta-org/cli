@@ -10,17 +10,17 @@ export async function initialize(args) {
     const events = {};
     global.main = {
       send: (event, ...args) => args.port.postMessage(JSON.stringify({ event, args })),
-      on: (event, callback) => events[event] ? events[event].push(callback) : events[event] = [callback],
+      on: (event, callback) => (events[event] ? events[event].push(callback) : (events[event] = [callback])),
       shared: new Proxy(shared, {
         set(_, prop, value) {
           args.port.postMessage(JSON.stringify({ sync: true, prop, value }));
           return Reflect.set(...arguments);
-        }
-      })
+        },
+      }),
     };
-    args.port.on('message', (msg) => {
+    args.port.on("message", (msg) => {
       const { event, sync, args, prop, value } = JSON.parse(msg);
-      if (event) events[event]?.forEach(callback => callback(...args));
+      if (event) events[event]?.forEach((callback) => callback(...args));
       else if (sync) shared[prop] = value;
     });
   }
@@ -32,5 +32,5 @@ export async function resolve(specifier, context, nextResolve, options) {
 }
 
 export async function load(url, context, nextLoad) {
-  return instance.load(url, context, nextLoad)
+  return instance.load(url, context, nextLoad);
 }
