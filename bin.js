@@ -1,41 +1,51 @@
 #!/usr/bin/env node
 "use strict";
-import { dirname, resolve } from "path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import { load as loadEnv } from "./loaders/env.js";
-import { load as loadPackage } from "./loaders/package.js";
+import fs from "@vistta/fs";
 import { fork } from "node:child_process";
+import { pathToFileURL } from "node:url";
+import { ENABLED_NODE_OPTIONS, importEnv, importJSON } from "./utils.js";
 
-const pkg = await loadPackage();
-const env = await loadEnv(
-  pkg?.vistta || {},
-  pkg?.name || "",
-  pkg?.version || "",
-);
-env.MAIN = process.argv[2];
-const args = [];
-const execArgv = ["--import", root("register.js")];
-for (let i = 3, len = process.argv.length; i < len; i++) {
-  const arg = process.argv[i].toLowerCase();
-  if (arg === "-d" || arg === "--dev") env.NODE_ENV = "development";
-  else if (arg === "-w" || arg === "--watch") {
-    env.NODE_WATCH = true;
-    execArgv.push("--watch");
-  } else if (arg === "-t" || arg === "--trace") env.NODE_TRACE = true;
+const dirname = import.meta.dirname;
+const cwd = process.cwd();
+const rootPackage = await importJSON(fs.resolve(dirname, "package.json"));
+const projectPackage = await importJSON(fs.resolve(cwd, "package.json"));
+const env = await importEnv(fs.resolve(cwd, ".env"));
+const projectEnvKeys = Object.keys(projectPackage?.env || {});
+for (let i = 0, len = projectEnvKeys.length; i < len; i++) env[projectEnvKeys[i]] = projectPackage.env[projectEnvKeys[i]];
+env.NODE_ENV = "production";
+env.CLI_VERSION = rootPackage.version;
+env.PROJECT_PATH = cwd;
+env.PROJECT_NAME = projectPackage.name;
+env.PROJECT_VERSION = projectPackage.version;
+
+const argv = [];
+const execArgv = ["--import", pathToFileURL(fs.resolve(dirname, "register.js")), "--experimental-sqlite", "--title=VISTTA"];
+for (let i = 2, len = process.argv.length; i < len; i++) {
+  const [arg, value] = process.argv[i].toLowerCase().split("=");
+  const nodeOption = ENABLED_NODE_OPTIONS[arg];
+  if (nodeOption) {
+    if (typeof nodeOption === "string") env[nodeOption] = value || true;
+    execArgv.push(arg + "=" + value);
+  } else if (arg === "-d" || arg === "--dev") env.NODE_ENV = "development";
+  else if (arg === "-h" || arg === "--help") env.NODE_HELP = true;
+  else if (arg === "-t" || arg === "--trace") env.NODE_TRACE = true;
   else if (arg === "--debug") env.NODE_DEBUG = true;
-  else if (arg === "--ci") env.CI = true;
-  else if (arg.startsWith("-")) args.push(execArgv);
-  else args.push(arg);
+  else if (arg === "--silent") env.NODE_SILENT = true;
+  else if (arg === "--auto-restart") env.NODE_AUTO_RESTART = true;
+  else if (arg === "--crash-report") env.NODE_CRASH_REPORT = true;
+  else argv.push(process.argv[i]);
 }
-if (env.MAIN === "test") env.NODE_ENV = "test";
-fork(pkg.vistta.scripts?.[env.MAIN] || pkg.vistta.scripts.default, args, {
+if (argv.length === 0) env.NODE_HELP = true;
+if (!env.NODE_DEBUG) execArgv.unshift("--no-warnings");
+start(fs.resolve(dirname, "main.js"), argv, {
   env,
   execArgv,
-  stdio: "inherit",
-}).on("exit", (code) => process.exit(code));
+  stdio: env.NODE_SILENT ? "ignore" : "inherit",
+});
 
-function root(filepath) {
-  return pathToFileURL(
-    resolve(dirname(fileURLToPath(import.meta.url)), filepath),
-  );
+function start(...args) {
+  fork(...args).on("exit", (code) => {
+    if (env.NODE_AUTO_RESTART && code != 0) start(...args);
+    else process.exit(code);
+  });
 }

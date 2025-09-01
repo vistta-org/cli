@@ -1,23 +1,51 @@
-import "@vistta/console";
+import "@vistta/console/global";
 import { register } from "node:module";
-import { outdated, exposeTestFunctions } from "./utils.js";
+import { MessageChannel } from "node:worker_threads";
+import { fs, importConfig, saveCrashReport } from "./utils.js";
 
-const vistta = {
-  loaders: JSON.parse(process.env.VISTTA_LOADERS),
-  compilerOptions: JSON.parse(process.env.VISTTA_COMPILER_OPTIONS),
-  bundlerOptions: JSON.parse(process.env.VISTTA_BUNDLER_OPTIONS),
-  defaultExtensions: JSON.parse(process.env.VISTTA_DEFAULT_EXTENSIONS),
+console.clear();
+console.print(`Vistta CLI v${process.env.CLI_VERSION}\n`);
+
+const { port1, port2 } = new MessageChannel();
+const shared = {};
+const events = {};
+global.loaders = {
+  send: (event, ...args) => port1.postMessage(JSON.stringify({ event, args })),
+  on: (event, callback) => (events[event] ? events[event].push(callback) : (events[event] = [callback])),
+  shared: new Proxy(shared, {
+    set(_, prop, value) {
+      port1.postMessage(JSON.stringify({ sync: true, prop, value }));
+      return Reflect.set(...arguments);
+    },
+  }),
 };
+port1.on("message", (msg) => {
+  const { event, sync, args, prop, value } = JSON.parse(msg);
+  if (event) events[event]?.forEach((callback) => callback(...args));
+  else if (sync) shared[prop] = value;
+});
+port1.unref();
 
-register("./loaders/index.js", import.meta.url, { data: vistta });
-global.system = new console.Console("system", { index: -1, date: false });
-if (process.env.NODE_ENV === "development")
-  (await outdated()).forEach(({ name, current, wanted, latest }) => {
-    if (current === wanted)
-      system.info(`Module "${name}" has a new version (${latest})`);
-    else system.warn(`Module "${name}" is outdated (${latest})`);
-  });
-if (process.env.NODE_ENV === "test") await exposeTestFunctions();
-system.announce(
-  `Vistta CLI v${(await import("./package.json"))?.default?.version}`,
-);
+const config = await importConfig({
+  cli: {
+    commands: {
+      default: fs.resolve(import.meta.dirname, "./commands/default.js"),
+      bundle: fs.resolve(import.meta.dirname, "./commands/bundle.js"),
+      project: fs.resolve(import.meta.dirname, "./commands/project.js"),
+      test: fs.resolve(import.meta.dirname, "./commands/test.js"),
+    },
+  },
+});
+const command = new (await import(config.cli.commands[process.argv[2]] || config.cli.commands["default"])).default();
+process.vistta = {
+  loaders: command.loaders,
+  resolvers: command.resolvers,
+  options: config,
+  port: port2,
+};
+register("./loaders/index.js", import.meta.url, { data: process.vistta, transferList: [port2] });
+process.vistta.main = command[process.env.NODE_HELP ? "help" : "main"].bind(command, ...process.argv.slice(2));
+process.on("uncaughtException", (error) => (console.error(error.stack), saveCrashReport(), process.exit(1)));
+process.on("warning", () => {
+  /* Do nothing */
+});

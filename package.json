@@ -1,15 +1,23 @@
 {
   "name": "@vistta/cli",
   "version": "0.1.0",
-  "description": "Vistta CLI (NodeJS Loaders Adapter)",
   "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./config": "./tsconfig.json",
+    "./commands/default": "./commands/default.js",
+    "./commands/bundle": "./commands/bundle.js",
+    "./commands/project": "./commands/project.js",
+    "./commands/test": "./commands/test.js",
+    "./loaders/bundler": "./loaders/bundler.js",
+    "./loaders/file": "./loaders/file.js",
+    "./loaders/json": "./loaders/json.js",
+    "./loaders/typescript": "./loaders/typescript.js"
+  },
   "bin": {
     "vistta": "./bin.js"
   },
-  "files": [
-    "LICENSE",
-    "tsconfig.json"
-  ],
   "scripts": {
     "postinstall": ""
   },
@@ -17,15 +25,17 @@
     "type": "git",
     "url": "https://git.vistta.org/vistta/cli.git"
   },
-  "author": "Tiago Terenas Almeida",
-  "license": "CC BY-NC-ND 4.0 DEED",
   "engines": {
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "@vistta/console": "*",
-    "@vistta/fs": "*",
-    "esbuild": "^0.23.0",
-    "semver": "^7.6.3"
-  }
+    "@vistta/console": "latest",
+    "@vistta/fs": "latest",
+    "@vistta/utils": "latest",
+    "esbuild": "^0.25.5",
+    "semver": "^7.7.2"
+  },
+  "author": "Tiago Terenas Almeida",
+  "license": "CC BY-NC-ND 4.0 DEED",
+  "description": "Vistta CLI (NodeJS and NPM wrapper for Loaders Adapter)"
 }
