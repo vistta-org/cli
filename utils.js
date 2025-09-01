@@ -2,7 +2,7 @@ import fs from "@vistta/fs";
 import { assign, async, extract, remove } from "@vistta/utils";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { inc, satisfies } from "semver";
+import { inc, satisfies, valid } from "semver";
 
 export const ENABLED_NODE_OPTIONS = {
   "-w": "NODE_WATCH",
@@ -124,11 +124,12 @@ export async function getOutdatedPackages(dirname) {
   return result;
 }
 
-export async function incrementPackageVersion(filepath, type) {
+export async function incrementPackageVersion(filepath, value) {
   const packageJSON = await importJSON(filepath);
-  if (!["major", "minor", "patch", "premajor", "preminor", "prepatch", "prerelease"].includes(type))
-    throw new TypeError("Invalid version increment type.");
-  packageJSON.version = inc(packageJSON.version, type);
+  if (["major", "minor", "patch", "premajor", "preminor", "prepatch", "prerelease"].includes(value))
+    packageJSON.version = inc(packageJSON.version, value);
+  else if (valid(value)) packageJSON.version = value;
+  else throw new TypeError("Invalid version or increment type.");
   await fs.writeFile(filepath, JSON.stringify(packageJSON, null, 2));
   return packageJSON.version;
 }
