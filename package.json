@@ -16,14 +16,14 @@
     "./loaders/typescript": "./loaders/typescript.js"
   },
   "bin": {
-    "vistta": "./bin.js"
+    "vistta": "bin.js"
   },
   "scripts": {
     "postinstall": ""
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/vistta-org/cli"
+    "url": "https://github.com/vistta-org/cli.git"
   },
   "engines": {
     "node": ">=22.0.0"
