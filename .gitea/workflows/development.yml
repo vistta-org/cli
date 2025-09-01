@@ -46,7 +46,7 @@ jobs:
         uses: tiagomta/npm@v1
         with:
           working-directory: ./packages/${{ env.module }}
-          command: version development ${{ gitea.run_id }} --email devops@vistta.org
+          command: version custom +development.${{ gitea.run_id }} --email devops@vistta.org
       - name: Publish Development Release (Gitea)
         uses: tiagomta/npm@v1
         with:
