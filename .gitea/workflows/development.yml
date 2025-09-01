@@ -51,12 +51,12 @@ jobs:
     steps:
       - name: Checkout
         uses: tiagomta/checkout@v1
-      - name: Development PreRelease
+      - name: PreRelease
         uses: tiagomta/npm@v1
         with:
-          command: version prerelease development-${{ gitea.run_id }} --email devops@vistta.org
+          command: version prerelease SNAPSHOT-${{ gitea.run_id }} --email devops@vistta.org
       - name: Publish PreRelease (Gitea)
         uses: tiagomta/npm@v1
         with:
-          command: publish --scope vistta --registry https://git.vistta.org/api/packages/vistta/npm/ --tag development
+          command: publish --scope vistta --registry https://git.vistta.org/api/packages/vistta/npm/ --tag snapshot
           token: ${{ secrets.TOKEN }}
