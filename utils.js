@@ -1,6 +1,7 @@
 import fs from "@vistta/fs";
-import { assign, extract, remove } from "@vistta/utils";
-import { pathToFileURL } from "node:url";
+import { assign, async, extract, remove } from "@vistta/utils";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { inc, satisfies } from "semver";
 
 export const ENABLED_NODE_OPTIONS = {
@@ -39,66 +40,33 @@ export async function importEnv(filepath) {
   }
 }
 
-export async function importCLI(command, system) {
-  const checked = {};
-  let fallback;
-  const processPackage = async (dirname, options) => {
-    const path = fs.resolve(dirname, "package.json");
-    if (checked[path]) return [null, options];
-    else checked[path] = true;
-    const { vistta: { commands, ..._options } = {}, dependencies, devDependencies, peerDependencies, workspaces } = (await importJSON(path)) || {};
-    options = assign(options, _options);
-    if (commands?.[command]) return [(await import(pathToFileURL(fs.resolve(dirname, commands[command]))))?.default, options];
-    if (!fallback && commands?.["default"]) fallback = fs.resolve(dirname, commands["default"]);
-    if (workspaces) {
-      const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
-      for (let i = 0, len = workspaceDirnames.length; i < len; i++) {
-        const result = await processPackage(workspaceDirnames[i], options);
-        if (result[0]) return result;
+export async function importConfig(options = {}) {
+  try {
+    const helper = async (file) => {
+      file = fileURLToPath(import.meta.resolve(file));
+      const {
+        extends: parent,
+        cliOptions: cli = {},
+        compilerOptions: compiler = {},
+        bundlerOptions: bundler = {},
+      } = await importJSON(file);
+      if (cli.commands) {
+        const commands = Object.keys(cli.commands);
+        const dirname = fs.dirname(file);
+        for (let i = 0, len = commands.length; i < len; i++)
+          cli.commands[commands[i]] = fs.resolve(dirname, cli.commands[commands[i]]);
       }
-    }
-    const keys = Object.keys(Object.assign(dependencies || {}, devDependencies || {}, peerDependencies || {}));
-    for (let i = 0, len = keys.length; i < len; i++) {
-      try {
-        const result = await processPackage(await resolveModule(path, keys[i]), options);
-        if (result[0]) return result;
-      } catch {
-        /* DO Nothing */
-      }
-    }
-    return [null, options];
-  };
-  const [cli, options] = await processPackage(process.cwd());
-  if (cli) return new cli(options);
-  if (system[command]) return new (await import(pathToFileURL(fs.resolve(import.meta.dirname, system[command])))).default(options);
-  if (fallback) return new (await import(pathToFileURL(fallback))).default(options);
-  return new system["default"](options);
-}
-
-export async function availableCommands() {
-  const checked = {};
-  const result = {};
-  const processPackage = async (dirname) => {
-    const path = fs.resolve(dirname, "package.json");
-    if (checked[path]) return;
-    else checked[path] = true;
-    const { name, vistta: { commands } = {}, dependencies, devDependencies, peerDependencies, workspaces } = (await importJSON(path)) || {};
-    if (commands) result[name] = Object.keys(commands);
-    if (workspaces) {
-      const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
-      for (let i = 0, len = workspaceDirnames.length; i < len; i++) await processPackage(workspaceDirnames[i]);
-    }
-    const keys = Object.keys(Object.assign(dependencies || {}, devDependencies || {}, peerDependencies || {}));
-    for (let i = 0, len = keys.length; i < len; i++) {
-      try {
-        await processPackage(await resolveModule(path, keys[i]));
-      } catch {
-        /* DO Nothing */
-      }
-    }
-  };
-  await processPackage(process.cwd());
-  return result;
+      if (parent) return assign(await helper(parent), { cli, compiler, bundler });
+      return { cli, compiler, bundler };
+    };
+    let file = fs.resolve(process.cwd(), "tsconfig.json");
+    if (!fs.existsSync(file)) file = fs.resolve(process.cwd(), "jsconfig.json");
+    if (!fs.existsSync(file)) throw new Error("No Config found.");
+    return assign(options, await helper(file));
+  } catch (e) {
+    console.error(e);
+    return options;
+  }
 }
 
 export async function getOutdatedPackages(dirname) {
@@ -115,7 +83,8 @@ export async function getOutdatedPackages(dirname) {
     await fetchPackageUpdates(filepath, devDependencies, true);
     if (!(workspaces?.length > 0)) return;
     const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
-    for (let i = 0, len = workspaceDirnames.length; i < len; i++) await processPackage(fs.resolve(workspaceDirnames[i], "package.json"), true);
+    for (let i = 0, len = workspaceDirnames.length; i < len; i++)
+      await processPackage(fs.resolve(workspaceDirnames[i], "package.json"), true);
   }
   async function fetchPackageUpdates(path, deps = {}, dev) {
     const keys = Object.keys(deps);
@@ -123,10 +92,10 @@ export async function getOutdatedPackages(dirname) {
       const packageName = keys[i];
       const { version, resolved, link } = packages["node_modules/" + packageName] || {};
       if (link) continue;
-      if (!version || !resolved) throw new Error(`Module ${packageName} not found `);
+      if (!version) throw new Error(`Module ${packageName} not found `);
       promises.push(
         new Promise((resolve, reject) =>
-          fetch(resolved.split("/-/")[0] + "/latest")
+          fetch(resolved ? resolved.split("/-/")[0] + "/latest" : `https://registry.npmjs.org/${packageName}/latest`)
             .then((response) => response.json())
             .then(resolve)
             .catch(reject),
@@ -176,21 +145,42 @@ export function saveCrashReport() {
   fs.writeFileSync(fs.resolve(crashFolder, Date.now() + ".log"), output);
 }
 
-export { assign, extract, remove };
+export function run(script, ...args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn("node", ["--no-warnings", "--run", script, "--", ...args], {
+      stdio: "inherit",
+      shell: true,
+      windowsHide: true,
+    });
+    child.on("error", reject);
+    child.on("close", (code) => resolve(code));
+    process.on("SIGINT", () => !child.killed && child.kill("SIGINT"));
+    process.on("SIGTERM", () => !child.killed && child.kill("SIGTERM"));
+  });
+}
+
+/**
+ * Function to parse command line arguments.
+ * @param {string[]} args
+ * @returns
+ */
+export function parseArgs(args) {
+  const result = [[], {}];
+  for (let i = 0, len = args.length; i < len; i++) {
+    const [option, value] = args[i].toLowerCase().split("=");
+    if (option.startsWith("--")) result[1][option.slice(2)] = evaluate(value);
+    else result[0].push(args[i]);
+  }
+  return result;
+}
+
+export { assign, async, extract, fs, remove };
 
 async function getProjectLock(path) {
   if (fs.existsSync(path + "/package-lock.json")) return await importJSON(fs.resolve(path, "package-lock.json"));
   const newPath = fs.resolve(path, "..");
   if (newPath === path) throw new Error("No Package Lock found.");
   return await getProjectLock(newPath);
-}
-
-async function resolveModule(path, module) {
-  const cur = fs.resolve(path, "node_modules", module);
-  if (fs.existsSync(cur)) return cur;
-  const newPath = fs.resolve(path, "..");
-  if (newPath === path) throw new Error("No node_modules folder found.");
-  return await resolveModule(newPath, module);
 }
 
 async function resolveWorkspacesDirnames(workspaces) {
@@ -208,4 +198,10 @@ async function resolveWorkspacesDirnames(workspaces) {
     }
   }
   return paths;
+}
+
+function evaluate(value) {
+  if (value == null || value === "true") return true;
+  if (value === "false") return false;
+  return value;
 }

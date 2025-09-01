@@ -1,9 +1,9 @@
 import { resolve } from "node:path";
-import { Bundler } from "../loaders/bundler.js";
-import { Loader } from "../loaders/index.js";
-import { default as DefaultCLI } from "./default.js";
+import { Bundler } from "../classes/bundler.js";
+import { Runtime } from "../classes/runtime.js";
+import DefaultCommand from "./default.js";
 
-export default class extends DefaultCLI {
+export default class BundlerCommand extends DefaultCommand {
   help() {
     console.print("Bundles the specified entry file");
     console.print("\nUsage:");
@@ -14,6 +14,6 @@ export default class extends DefaultCLI {
     let [args, options] = this.parse(argv);
     if (args.length === 0) return this.help();
     options = Object.assign({}, this.options, options, { outdir: args[1] });
-    new Bundler(new Loader(global.vistta)).run(resolve(process.cwd(), args[0]), options);
+    new Bundler(new Runtime(global.vistta)).run(resolve(process.cwd(), args[0]), options);
   }
 }

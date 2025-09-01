@@ -2,17 +2,17 @@ import fs from "@vistta/fs";
 import { build } from "esbuild";
 import { pathToFileURL } from "node:url";
 import { assign, extract } from "../utils.js";
-import { CLI } from "./cli.js";
-import { Loader } from "./loader.js";
+import { Command } from "./command.js";
+import { Runtime } from "./runtime.js";
 
 export class Bundler {
   #loader;
   #options;
 
   constructor(arg1) {
-    if (arg1 instanceof Loader) this.#loader = arg1;
-    else if (arg1 instanceof CLI) this.#loader = new Loader(arg1);
-    else if (!arg1) this.#loader = new Loader(process.vistta);
+    if (arg1 instanceof Runtime) this.#loader = arg1;
+    else if (arg1 instanceof Command) this.#loader = new Runtime(arg1);
+    else if (!arg1) this.#loader = new Runtime(process.vistta);
     else throw new Error("Invalid first argument. Expected Loader or CLI instance.");
     this.#options = this.#loader?.options?.bundler ?? {};
   }
@@ -68,7 +68,6 @@ export class Bundler {
   }
 }
 
-// eslint-disable-next-line no-unused-vars
 function setup({ files: bundlerFiles, resources: bundlerResources, filename, loader, paths = {}, exports, platform }) {
   const filter = /.*/;
   const basename = fs.basename(filename);

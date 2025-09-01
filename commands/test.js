@@ -1,38 +1,41 @@
 import { COLORS } from "@vistta/console";
 import fs from "@vistta/fs";
-import { default as DefaultCLI } from "./default.js";
+import { parseArgs } from "../utils.js";
+import DefaultCommand from "./default.js";
 
 const cwd = process.cwd();
 
-export default class extends DefaultCLI {
+export default class extends DefaultCommand {
   #options = {};
   #results = [];
   #failed;
   #suite;
   #runningCounter = 0;
 
-  constructor(options) {
-    super(options);
-    this.env("NODE_ENV", "testing");
+  constructor() {
+    super();
     const suite = this.suite.bind(this, false);
     suite.only = this.suite.bind(this, true);
-    this.define("suite", suite);
+    this.define("env", "NODE_ENV", "testing");
+    this.define("global", "suite", suite);
     const test = this.test.bind(this, false);
     test.only = this.test.bind(this, true);
-    this.define("test", test);
-    this.define("expect", this.expect.bind(this));
+    this.define("global", "test", test);
+    this.define("global", "expect", this.expect.bind(this));
   }
 
   help() {
     console.print("Runs all the tests files that match the pattern/s in the current project");
     console.print("\nUsage:");
     console.print("vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project");
-    console.print('vistta test --filter="pattern"\tRuns all the tests that match the filter pattern/s in the current project');
+    console.print(
+      'vistta test --filter="pattern"\tRuns all the tests that match the filter pattern/s in the current project',
+    );
     console.print("vistta test --only\tRuns all the tests that have the only");
   }
 
   async main(_, ...argv) {
-    let [args, options] = this.parse(argv);
+    let [args, options] = parseArgs(argv);
     this.#options = options;
     if (args.length === 0) args = ["**/*.test.js", "**/*.test.ts"];
     for (let i = 0, len = args.length; i < len; i++) args[i] = fs.resolve(cwd, args[i]);
@@ -77,7 +80,11 @@ export default class extends DefaultCLI {
   }
 
   async test(only, name, callback) {
-    if ((this.#options.filter && !name.match(new RegExp(this.#options.filter, "i"))) || (this.#options.only && !(only || this.#suite?.only))) return;
+    if (
+      (this.#options.filter && !name.match(new RegExp(this.#options.filter, "i"))) ||
+      (this.#options.only && !(only || this.#suite?.only))
+    )
+      return;
     this.#runningCounter++;
     const test = { name };
     test.start = performance();
@@ -100,6 +107,45 @@ export default class extends DefaultCLI {
 
   expect(target, label) {
     return {
+      not: {
+        toEqual: (value, unit = "") => {
+          if (target !== value) return;
+          throw new Error(`expected ${label ? label + "(" + target + ")" : target} to not equal ${value}${unit}`);
+        },
+        toBeLessThan: (value, unit = "") => {
+          if (target >= value) return;
+          throw new Error(`expected ${label ? label + "(" + target + ")" : target} to not be less than ${value}${unit}`);
+        },
+        toBeGreaterThan: (value, unit = "") => {
+          if (target <= value) return;
+          throw new Error(`expected ${label ? label + "(" + target + ")" : target} to not be greater than ${value}${unit}`);
+        },
+        toInclude: (value) => {
+          if (target.indexOf(value) === -1) return;
+          throw new Error(`expected ${label ? label + "(" + target + ")" : target} to not include ${value}`);
+        },
+        toMatch: (regex) => {
+          if (!target.match(new RegExp(regex))) return;
+          throw new Error(`expected ${label ? label + "(" + target + ")" : target} to not match ${regex}`);
+        },
+        toThrow: (message) => {
+          try {
+            target();
+          } catch (error) {
+            if (!message)
+              throw new Error(`expected ${label ? label + "()" : "function()"} to not throw, but got ${error.message}`);
+            if (error.message === message)
+              throw new Error(
+                `expected ${label ? label + "()" : "function()"} to not throw ${message}, but got ${error.message}`,
+              );
+            if (error.message.match(new RegExp(message)))
+              throw new Error(
+                `expected ${label ? label + "()" : "function()"} to not throw ${message}, but got ${error.message}`,
+              );
+            return;
+          }
+        },
+      },
       toEqual: (value, unit = "") => {
         if (target === value) return;
         throw new Error(`expected ${label ? label + "(" + target + ")" : target} to equal ${value}${unit}`);
@@ -119,6 +165,16 @@ export default class extends DefaultCLI {
       toMatch: (regex) => {
         if (target.match(new RegExp(regex))) return;
         throw new Error(`expected ${label ? label + "(" + target + ")" : target} to match ${regex}`);
+      },
+      toThrow: (message) => {
+        try {
+          target();
+        } catch (error) {
+          if (!message) return;
+          if (error.message === message) return;
+          if (error.message.match(new RegExp(message))) return;
+          throw new Error(`expected ${label ? label + "()" : "function()"} to throw ${message}, but got ${error.message}`);
+        }
       },
     };
   }

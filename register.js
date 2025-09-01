@@ -1,9 +1,10 @@
 import "@vistta/console/global";
 import { register } from "node:module";
 import { MessageChannel } from "node:worker_threads";
-import { default as DefaultCLI } from "./cli/default.js";
-import { CLI } from "./index.js";
-import { importCLI, saveCrashReport } from "./utils.js";
+import { fs, importConfig, saveCrashReport } from "./utils.js";
+
+console.clear();
+console.print(`Vistta CLI v${process.env.CLI_VERSION}\n`);
 
 const { port1, port2 } = new MessageChannel();
 const shared = {};
@@ -25,29 +26,25 @@ port1.on("message", (msg) => {
 });
 port1.unref();
 
-const commands = {
-  default: DefaultCLI,
-  bundle: "./cli/bundle.js",
-  package: "./cli/package.js",
-  i: "./cli/npm.js",
-  install: "./cli/npm.js",
-  add: "./cli/npm.js",
-  uninstall: "./cli/npm.js",
-  remove: "./cli/npm.js",
-  update: "./cli/npm.js",
-  patch: "./cli/npm.js",
-  publish: "./cli/npm.js",
-  unpublish: "./cli/npm.js",
-  outdated: "./cli/npm.js",
-  test: "./cli/test.js",
+const config = await importConfig({
+  cli: {
+    commands: {
+      default: fs.resolve(import.meta.dirname, "./commands/default.js"),
+      bundle: fs.resolve(import.meta.dirname, "./commands/bundle.js"),
+      project: fs.resolve(import.meta.dirname, "./commands/project.js"),
+      test: fs.resolve(import.meta.dirname, "./commands/test.js"),
+    },
+  },
+});
+const command = new (await import(config.cli.commands[process.argv[2]] || config.cli.commands["default"])).default();
+process.vistta = {
+  loaders: command.loaders,
+  resolvers: command.resolvers,
+  options: config,
+  port: port2,
 };
-const cli = await importCLI(process.argv[2], commands);
-if (!(cli instanceof CLI)) throw new TypeError("Invalid CLI");
-console.clear();
-console.print(`Vistta CLI v${process.env.CLI_VERSION}\n`);
-process.vistta = { loaders: cli.loaders, resolve: cli.resolve, options: cli.options, port: port2 };
 register("./loaders/index.js", import.meta.url, { data: process.vistta, transferList: [port2] });
-process.vistta.main = cli[process.env.NODE_HELP ? "help" : "main"].bind(cli, ...process.argv.slice(2));
+process.vistta.main = command[process.env.NODE_HELP ? "help" : "main"].bind(command, ...process.argv.slice(2));
 process.on("uncaughtException", (error) => (console.error(error.stack), saveCrashReport(), process.exit(1)));
 process.on("warning", () => {
   /* Do nothing */
