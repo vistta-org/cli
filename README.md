@@ -4,14 +4,10 @@ Vistta CLI is a framework for extending the Node.js loader API and building reus
 It enables you to create custom loaders, and define your own commands for any projects.
 Compatible with either jsconfig or tsconfig json files.
 
----
-
 ## Features
 
 - **Custom Loaders:** Register and use your own file loaders for any extension or import attribute.
 - **Custom Commands:** Create custom commands by extending the Command class or any other and wiring them into your project.
-
----
 
 ## Getting Started
 
@@ -20,8 +16,6 @@ Compatible with either jsconfig or tsconfig json files.
 ```sh
 npm install @vistta/cli
 ```
-
----
 
 ## Usage
 
@@ -50,8 +44,6 @@ npm install @vistta/cli
 
 - `vistta test [pattern]`  
   Run tests matching the specified pattern.
-
----
 
 ## Extending the CLI
 
@@ -113,8 +105,6 @@ export default class MyCommand extends Command {
 ```sh
 vistta my-command [options]
 ```
-
----
 
 ## **License**
 
