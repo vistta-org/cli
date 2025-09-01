@@ -59,12 +59,15 @@ export default class extends Command {
   }
 
   async main(_, command, ...args) {
+    console.clear();
     switch (command) {
       case "name":
         return console.print(process.env.PROJECT_NAME);
       case "version":
         if (!args[0]) return console.print(process.env.PROJECT_VERSION);
-        return console.print(await incrementPackageVersion(fs.resolve(process.env.PROJECT_PATH, "package.json"), args[0]));
+        return console.print(
+          await incrementPackageVersion(fs.resolve(process.env.PROJECT_PATH, "package.json"), args[0], args[1]),
+        );
       case "outdated":
       case "patch":
       case "update":

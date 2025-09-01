@@ -124,10 +124,10 @@ export async function getOutdatedPackages(dirname) {
   return result;
 }
 
-export async function incrementPackageVersion(filepath, value) {
+export async function incrementPackageVersion(filepath, value, id) {
   const packageJSON = await importJSON(filepath);
   if (["major", "minor", "patch", "premajor", "preminor", "prepatch", "prerelease"].includes(value))
-    packageJSON.version = inc(packageJSON.version, value);
+    packageJSON.version = inc(packageJSON.version, value, id);
   else if (valid(value)) packageJSON.version = value;
   else throw new TypeError("Invalid version or increment type.");
   await fs.writeFile(filepath, JSON.stringify(packageJSON, null, 2));

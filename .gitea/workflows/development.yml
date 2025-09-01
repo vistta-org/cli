@@ -6,7 +6,7 @@ on:
 env:
   module: cli
 jobs:
-  Validation:
+  Development:
     runs-on: ubuntu-latest
     container:
       image: node:latest
@@ -42,17 +42,11 @@ jobs:
       - name: Unit Tests
         working-directory: ./packages/${{ env.module }}
         run: npx vistta test
-
-  DevelopmentRelease:
-    needs: Validation
-    runs-on: ubuntu-latest
-    container:
-      image: node:latest
-    steps:
-      - name: Checkout
-        uses: tiagomta/checkout@v1
-      - name: Publish Package (Gitea)
-        uses: tiagomta/npm@v1
-        with:
-          command: publish --scope vistta --registry https://git.vistta.org/api/packages/vistta/npm/ --tag next
-          token: ${{ secrets.TOKEN }}
+      - name: Devevelopment Channel
+        run: |
+          npm config set @vistta:registry https://git.vistta.org/api/packages/vistta/npm/
+          npm config set //git.vistta.org/api/packages/vistta/npm/:_authToken=${{ secrets.NPM_TOKEN }}
+          cd ./packages/${{ env.module }}
+          npx vistta project version prerelease development
+          npm publish --scope @vistta --registry https://git.vistta.org/api/packages/vistta/npm/ --tag latest
+          npm dist-tag add @vistta/${{ env.module }}@$(npx vistta project version) development
