@@ -12,13 +12,13 @@ on:
           - Major
 
 env:
-  ref: refs/heads/temp
+  ref: refs/heads/development
 jobs:
   Release:
     runs-on: ubuntu-latest
     container:
       image: node:latest
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/temp'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/development'
     steps:
       - name: Checkout
         uses: tiagomta/checkout@v1
