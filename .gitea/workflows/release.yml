@@ -33,7 +33,7 @@ jobs:
           run: |
             await git.config("user.email", "devops@vistta.org");
             const version = await npm.version("${{ inputs.type }}".toLowerCase());
-            await git.push();
+            await git.push("origin", "${{ env.ref }}", "--tags");
             await git.checkout("origin/master");
             await git.merge(`${{ env.ref }} --ff-only`);
             await git.push("origin", "master");
