@@ -25,14 +25,21 @@ jobs:
         with:
           ref: ${{ env.ref }}
           token: ${{ secrets.TOKEN }}
-      - name: Test
+      - name: NPM Release
         uses: tiagomta/nodejs-run@v1
+        id: npm
         with:
           target: inline
           run: |
             git.config("user.email", "devops@vistta.org");
-            const issues = await gitea.issues.list({ state: "closed" });
-            console.log(issues);
+            const version = await npm.version("${{ inputs.type }}".toLowerCase());
+            result = version;
+      - name: Gitea Release
+        uses: tiagomta/nodejs-run@v1
+        with:
+          target: inline
+          run: |
+            console.log("${{ steps.npm.outputs.result }}");
 
-#            const version = await npm.version("${{ inputs.type }}".toLowerCase());
+#            const issues = await gitea.issues.list({ state: "closed" });
 #            const milestone = await gitea.milestones.create("${{ inputs.type }} (v" + version + ")");
