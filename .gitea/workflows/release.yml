@@ -39,7 +39,7 @@ jobs:
         with:
           target: inline
           run: |
-            console.log("${{ steps.npm.outputs.result.version }}");
+            console.log("${{ steps.npm.outputs.result }}");
 
 #            const issues = await gitea.issues.list({ state: "closed" });
 #            const milestone = await gitea.milestones.create("${{ inputs.type }} (v" + version + ")");
