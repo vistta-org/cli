@@ -12,13 +12,13 @@ on:
           - Major
 
 env:
-  ref: refs/heads/development
+  ref: refs/heads/temp
 jobs:
   Release:
     runs-on: ubuntu-latest
     container:
       image: node:latest
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/development'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/temp'
     steps:
       - name: Checkout
         uses: tiagomta/checkout@v1
@@ -28,7 +28,7 @@ jobs:
       - name: Test
         uses: tiagomta/nodejs-run@v1
         with:
-          type: "inline"
+          target: "inline"
           run: |
             console.log('update package');
             console.log(gitea);
