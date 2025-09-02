@@ -26,10 +26,10 @@ jobs:
           ref: ${{ env.ref }}
           token: ${{ secrets.TOKEN }}
       - name: Test
-        uses: tiagomta/nodejs@v1
+        uses: tiagomta/nodejs-run@v1
         with:
           type: "inline"
-          inline: |
+          run: |
             console.log('update package');
             console.log(gitea);
             console.log('${{ inputs.type }}');
