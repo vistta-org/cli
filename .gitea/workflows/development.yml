@@ -3,6 +3,11 @@ on:
   push:
     branches:
       - development
+  pull_request:
+    types: [synchronize]
+    branches:
+      - master
+
 env:
   module: cli
 jobs:
@@ -20,6 +25,7 @@ jobs:
           fetch-depth: 0
           submodules: true
       - name: Close Issues
+        if: gitea.event_name == 'push'
         uses: tiagomta/gitea@v1
         with:
           token: ${{ secrets.TOKEN }}
@@ -30,20 +36,21 @@ jobs:
       - name: Module Validation
         working-directory: ./packages/${{ env.module }}
         run: npx vistta project outdated
-        continue-on-error: true
+        continue-on-error: ${{ gitea.event_name == 'push' }}
       - name: Eslint Validation
         working-directory: ./packages/${{ env.module }}
         run: npx eslint .
-        continue-on-error: true
+        continue-on-error: ${{ gitea.event_name == 'push' }}
       - name: Typescript Validation
         working-directory: ./packages/${{ env.module }}
         run: npx tsc
-        continue-on-error: true
+        continue-on-error: ${{ gitea.event_name == 'push' }}
       - name: Unit Tests
         working-directory: ./packages/${{ env.module }}
         run: npx vistta test
 
   PreRelease:
+    if: gitea.event_name == 'push'
     needs: Validation
     runs-on: ubuntu-latest
     container:
