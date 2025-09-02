@@ -34,15 +34,15 @@ jobs:
       - name: Module Validation
         working-directory: ./packages/${{ env.module }}
         run: npx vistta project outdated
-        continue-on-error: true
+        continue-on-error: ${{ gitea.event_name == 'push' }}
       - name: Eslint Validation
         working-directory: ./packages/${{ env.module }}
         run: npx eslint .
-        continue-on-error: true
+        continue-on-error: ${{ gitea.event_name == 'push' }}
       - name: Typescript Validation
         working-directory: ./packages/${{ env.module }}
         run: npx tsc
-        continue-on-error: true
+        continue-on-error: ${{ gitea.event_name == 'push' }}
       - name: Unit Tests
         working-directory: ./packages/${{ env.module }}
         run: npx vistta test
