@@ -30,7 +30,7 @@ jobs:
         with:
           target: "inline"
           run: |
-            console.log(npm.version("${{ inputs.type }}".toLowerCase()));
+            console.log(npm);
             console.log('update package');
             console.log(gitea);
             console.log('${{ inputs.type }}');
