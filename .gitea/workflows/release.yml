@@ -31,16 +31,44 @@ jobs:
         with:
           target: inline
           run: |
-            git.config("user.email", "devops@vistta.org");
+            await git.config("user.email", "devops@vistta.org");
             const version = await npm.version("${{ inputs.type }}".toLowerCase());
+            await git.push();
+            await git.checkout("master");
+            await git.merge(`${{ env.ref }} --ff-only`);
+            await git.push("origin", "master");
+            await npm.publish();
+            // Release Gitea
+            npm.config("set", "@vistta:registry", "https://git.vistta.org/api/packages/vistta/npm/");
+            npm.config("set", "--", "//git.vistta.org/api/packages/vistta/npm/:_authToken", "${{ secrets.TOKEN }}");
+            npm.publish();
+            // Release NPM
+            npm.config("set", "@vistta:registry", "https://registry.npmjs.org/");
+            npm.config("set", "--", "//registry.npmjs.org/:_authToken", "${{ secrets.NPM_TOKEN }}");
+            npm.publish("--access", "public");
             result = version;
       - name: Gitea Release
         uses: tiagomta/nodejs-run@v1
         with:
           target: inline
           run: |
-            console.log(`${{ steps.npm.outputs.result }}`);
+            const version = (`${{ steps.npm.outputs.result }}`);
+            const milestone = await gitea.milestones.create("${{ inputs.type }} (" + version + ")");
             const issues = await gitea.issues.list({ state: "closed" });
-
-#            const issues = await gitea.issues.list({ state: "closed" });
-#            const milestone = await gitea.milestones.create("${{ inputs.type }} (v" + version + ")");
+            const types = {};
+            for (let issue of issues) {
+              const type = issue.label?.[0]?.name;
+              if (type && !types[type]) types[type] = `## ${type}\n`;
+              if (type && issue.milestone == milestone) 
+                types[type] += `- ${issue.title} (#${issue.number})\n`;
+              else if (issue.milestone == null) {
+                await gitea.issues.update(issue.id, { milestone: milestone.id });
+                if (type) types[type] += `- ${issue.title} (#${issue.number})\n`;
+              }
+            }
+            await gitea.releases.create({
+              tag_name: version,
+              name: "${{ inputs.type }} (" + version + ")",
+              body: Object.values(types).join("\n")
+            });
+            await gitea.milestones.close(milestone.id);
