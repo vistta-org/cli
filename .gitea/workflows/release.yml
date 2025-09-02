@@ -31,7 +31,6 @@ jobs:
           target: inline
           run: |
             git.config("user.email", "devops@vistta.org");
-            npm.version("${{ inputs.type }}".toLowerCase()).then(console.log);
-            console.log('update package');
-            console.log(gitea);
-            console.log('${{ inputs.type }}');
+            const version = await npm.version("${{ inputs.type }}".toLowerCase());
+            const result = gitea.milestones.create("${{ inputs.type }} (v" + version + ")");
+            console.log(result);
