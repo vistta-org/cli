@@ -31,6 +31,8 @@ jobs:
           target: inline
           run: |
             git.config("user.email", "devops@vistta.org");
-            const version = await npm.version("${{ inputs.type }}".toLowerCase());
-            const result = gitea.milestones.create("${{ inputs.type }} (v" + version + ")");
-            console.log(result);
+            const issues = await gitea.issues.list({ state: "closed" });
+            console.log(issues);
+
+#            const version = await npm.version("${{ inputs.type }}".toLowerCase());
+#            const milestone = await gitea.milestones.create("${{ inputs.type }} (v" + version + ")");
