@@ -34,6 +34,7 @@ jobs:
             git.config("user.email", "devops@vistta.org");
             const version = await npm.version("${{ inputs.type }}".toLowerCase());
             result = version;
+            console.log("New Version: " + version);
       - name: Gitea Release
         uses: tiagomta/nodejs-run@v1
         with:
