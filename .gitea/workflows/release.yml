@@ -28,7 +28,7 @@ jobs:
       - name: Test
         uses: tiagomta/nodejs-run@v1
         with:
-          target: "inline"
+          target: inline
           run: |
             console.log(npm);
             console.log('update package');
