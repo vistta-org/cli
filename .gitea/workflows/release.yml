@@ -30,6 +30,7 @@ jobs:
         with:
           target: inline
           run: |
+            git.config("--global user.name devops@vistta.org");
             console.log(npm.version("${{ inputs.type }}".toLowerCase()));
             console.log('update package');
             console.log(gitea);
