@@ -14,7 +14,36 @@ on:
 env:
   ref: refs/heads/development
 jobs:
+  Validation:
+    runs-on: ubuntu-latest
+    container:
+      image: node:latest
+    steps:
+      - name: Checkout
+        uses: tiagomta/checkout@v1
+        with:
+          repository: vistta/workspace
+          ref: main
+          token: ${{ secrets.TOKEN }}
+          fetch-depth: 0
+          submodules: true
+      - name: Setup Node
+        run: npm ci
+      - name: Module Validation
+        working-directory: ./packages/${{ env.module }}
+        run: npx vistta project outdated
+      - name: Eslint Validation
+        working-directory: ./packages/${{ env.module }}
+        run: npx eslint .
+      - name: Typescript Validation
+        working-directory: ./packages/${{ env.module }}
+        run: npx tsc
+      - name: Unit Tests
+        working-directory: ./packages/${{ env.module }}
+        run: npx vistta test
+
   Release:
+    needs: Validation
     runs-on: ubuntu-latest
     container:
       image: node:latest

@@ -44,7 +44,6 @@ jobs:
         run: npx vistta test
 
   PreRelease:
-    if: gitea.event_name == 'push'
     needs: Validation
     runs-on: ubuntu-latest
     container:
