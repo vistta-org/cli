@@ -36,9 +36,9 @@ jobs:
             await git.push("origin", "${{ env.ref }}", "--tags");
             await git.fetch("origin", "master");
             await git.checkout("master");
-            await git.merge(`${{ env.ref }} --ff-only`);
+            await git.merge("--squash", "${{ env.ref }}");
+            await git.commit(`-m "${{ inputs.type }} (${version})"`)
             await git.push("origin", "master");
-            await npm.publish();
             // Release Gitea
             npm.config("set", "@vistta:registry", "https://git.vistta.org/api/packages/vistta/npm/");
             npm.config("set", "--", "//git.vistta.org/api/packages/vistta/npm/:_authToken", "${{ secrets.TOKEN }}");
