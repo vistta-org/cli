@@ -33,19 +33,20 @@ jobs:
           run: |
             await git.config("user.email", "devops@vistta.org");
             const version = await npm.version("${{ inputs.type }}".toLowerCase());
+            // Release Gitea
+            await npm.config("set", "@vistta:registry", "https://git.vistta.org/api/packages/vistta/npm/");
+            await npm.config("set", "--", "//git.vistta.org/api/packages/vistta/npm/:_authToken", "${{ secrets.TOKEN }}");
+            await npm.publish();
+            // Release NPM
+            await npm.config("set", "@vistta:registry", "https://registry.npmjs.org/");
+            await npm.config("set", "--", "//registry.npmjs.org/:_authToken", "${{ secrets.NPM_TOKEN }}");
+            await npm.publish("--access", "public");
+            // Update Branches
             await git.push("origin", "${{ env.ref }}", "--tags");
             await git.fetch("origin", "master");
             await git.checkout("master");
             await git.reset("--hard", "${{ env.ref }}");
             await git.push("origin", "master", "--force");
-            // Release Gitea
-            npm.config("set", "@vistta:registry", "https://git.vistta.org/api/packages/vistta/npm/");
-            npm.config("set", "--", "//git.vistta.org/api/packages/vistta/npm/:_authToken", "${{ secrets.TOKEN }}");
-            npm.publish();
-            // Release NPM
-            npm.config("set", "@vistta:registry", "https://registry.npmjs.org/");
-            npm.config("set", "--", "//registry.npmjs.org/:_authToken", "${{ secrets.NPM_TOKEN }}");
-            npm.publish("--access", "public");
             result = version;
       - name: Gitea Release
         uses: tiagomta/nodejs-run@v1
