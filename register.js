@@ -36,7 +36,6 @@ const config = await importConfig({
     },
   },
 });
-console.log("config", config);
 const command = new (await import(config.cli.commands[process.argv[2]] || config.cli.commands["default"])).default();
 process.vistta = {
   loaders: command.loaders,
