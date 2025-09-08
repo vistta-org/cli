@@ -61,10 +61,10 @@ export async function importConfig(options = {}) {
     };
     let file = fs.resolve(process.cwd(), "tsconfig.json");
     if (!fs.existsSync(file)) file = fs.resolve(process.cwd(), "jsconfig.json");
-    if (!fs.existsSync(file)) throw new Error("No Config found.");
+    if (!fs.existsSync(file)) return options;
     return assign(options, await helper(file));
   } catch (e) {
-    console.error(e);
+    console.error(e.trace || e.message);
     return options;
   }
 }
