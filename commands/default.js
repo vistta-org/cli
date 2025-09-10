@@ -11,7 +11,7 @@ export default class DefaultCommand extends Command {
     this.register(fs.resolve(dirname, "../loaders/typescript.js"), { filter: ".*\\.(ts|mts|cts)" });
     this.register(fs.resolve(dirname, "../loaders/json.js"), { filter: ".*\\.json" });
     this.register(fs.resolve(dirname, "../loaders/bundler.js"), { type: "bundler" });
-    this.resolve("ts", "mts", "cts");
+    this.resolve("ts");
   }
 
   async help() {

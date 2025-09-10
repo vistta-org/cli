@@ -8,7 +8,7 @@
 
 export class Command {
   #loaders = [];
-  #resolvers = ["js", "mjs", "cjs"];
+  #resolvers = ["js"];
 
   get loaders() {
     return this.#loaders;

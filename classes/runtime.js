@@ -142,10 +142,13 @@ export class Runtime {
 function match(loaders, path, type = FALLBACK) {
   if (type === FALLBACK && new RegExp(`^.*\\.(js|mjs|cjs)$`).test(path)) return null;
   const patterns = Object.keys(loaders[type] || {});
+  let fallback = null;
   for (let i = 0, len = patterns.length; i < len; i++) {
     const pattern = patterns[i];
-    if (pattern === FALLBACK || new RegExp(`^${pattern}$`).test(path)) return loaders[type][pattern];
+    if (pattern === FALLBACK) fallback = pattern;
+    else if (new RegExp(`^${pattern}$`).test(path)) return loaders[type][pattern];
   }
+  if (fallback) return loaders[type][fallback];
   if (path === FALLBACK) return null;
   return match(loaders, FALLBACK, type);
 }
