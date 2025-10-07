@@ -21,7 +21,7 @@ export class Bundler {
     const files = [];
     const resources = {};
     assign(options, this.#options);
-    const [paths, exports] = extract(options, "paths", "exports");
+    const [paths, exports, sideEffects] = extract(options, "paths", "exports", "sideEffects");
     options.entryPoints = [exports ? "@exports" : filename];
     options.bundle = true;
     options.outdir ??= "dist";
@@ -47,6 +47,7 @@ export class Bundler {
         files,
         resources,
         exports,
+        sideEffects: sideEffects !== "none",
         platform: options.platform,
       }),
     );
@@ -68,7 +69,7 @@ export class Bundler {
   }
 }
 
-function setup({ files: bundlerFiles, resources: bundlerResources, filename, loader, paths = {}, exports, platform }) {
+function setup({ files: bundlerFiles, resources: bundlerResources, filename, loader, paths = {}, exports, sideEffects, platform }) {
   const filter = /.*/;
   const basename = fs.basename(filename);
   const dirname = fs.dirname(filename);
@@ -76,8 +77,8 @@ function setup({ files: bundlerFiles, resources: bundlerResources, filename, loa
     name: "vistta",
     setup: (build) => (
       build.onResolve({ filter }, async ({ path, importer, resolveDir }) => {
-        if (path === "@exports") return { path: basename, namespace: "exports" };
-        if (paths[path]) return paths[path];
+        if (path === "@exports") return { path: basename, namespace: "exports", sideEffects };
+        if (paths[path]) return Object.assign({ sideEffects }, paths[path]);
         if (!fs.isAbsolute(importer)) importer = fs.resolve(resolveDir, importer);
         const { final, builtin, file } = await loader.resolve(
           path,
@@ -87,9 +88,9 @@ function setup({ files: bundlerFiles, resources: bundlerResources, filename, loa
           },
           (final, { builtin, file }) => ({ final, builtin, file }),
         );
-        if (!builtin && file) return { path: final };
+        if (!builtin && file) return { path: final, sideEffects };
         if (platform === "node") return { external: true };
-        if (!builtin) return {};
+        if (!builtin) return { sideEffects };
         return { path: final, namespace: "ignore" };
       }),
       build.onLoad({ filter }, async ({ path, namespace, with: importAttributes = {} }) => {
