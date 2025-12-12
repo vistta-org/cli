@@ -1,7 +1,7 @@
 import "@vistta/console/global";
 import { register } from "node:module";
 import { MessageChannel } from "node:worker_threads";
-import { fs, importConfig, saveCrashReport } from "./utils.js";
+import { importConfig, resolve, saveCrashReport } from "./utils.js";
 
 console.clear();
 console.print(`Vistta CLI v${process.env.CLI_VERSION}\n`);
@@ -29,10 +29,10 @@ port1.unref();
 const config = await importConfig({
   cli: {
     commands: {
-      default: fs.resolve(import.meta.dirname, "./commands/default.js"),
-      bundle: fs.resolve(import.meta.dirname, "./commands/bundle.js"),
-      project: fs.resolve(import.meta.dirname, "./commands/project.js"),
-      test: fs.resolve(import.meta.dirname, "./commands/test.js"),
+      default: resolve(import.meta.dirname, "./commands/default.js"),
+      bundle: resolve(import.meta.dirname, "./commands/bundle.js"),
+      project: resolve(import.meta.dirname, "./commands/project.js"),
+      test: resolve(import.meta.dirname, "./commands/test.js"),
     },
   },
 });

@@ -1,7 +1,9 @@
 import fs from "@vistta/fs";
 import { assign, async, extract, remove } from "@vistta/utils";
 import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { platform } from "node:os";
+import { isAbsolute } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { inc, satisfies, valid } from "semver";
 
 export const ENABLED_NODE_OPTIONS = {
@@ -43,7 +45,6 @@ export async function importEnv(filepath) {
 export async function importConfig(options = {}) {
   try {
     const helper = async (file) => {
-      file = fileURLToPath(import.meta.resolve(file));
       const {
         extends: parent,
         cliOptions: cli = {},
@@ -54,15 +55,15 @@ export async function importConfig(options = {}) {
         const commands = Object.keys(cli.commands);
         const dirname = fs.dirname(file);
         for (let i = 0, len = commands.length; i < len; i++)
-          cli.commands[commands[i]] = fs.resolve(dirname, cli.commands[commands[i]]);
+          cli.commands[commands[i]] = resolve(dirname, cli.commands[commands[i]]);
       }
-      if (parent) return assign(await helper(parent), { cli, compiler, bundler });
+      if (parent) return assign(await helper(ensurePath(parent)), { cli, compiler, bundler });
       return { cli, compiler, bundler };
     };
     let file = fs.resolve(process.cwd(), "tsconfig.json");
     if (!fs.existsSync(file)) file = fs.resolve(process.cwd(), "jsconfig.json");
     if (!fs.existsSync(file)) return options;
-    return assign(options, await helper(file));
+    return assign(options, await helper(ensurePath(file)));
   } catch (e) {
     console.error(e.trace || e.message);
     return options;
@@ -160,11 +161,6 @@ export function run(script, ...args) {
   });
 }
 
-/**
- * Function to parse command line arguments.
- * @param {string[]} args
- * @returns
- */
 export function parseArgs(args) {
   const result = [[], {}];
   for (let i = 0, len = args.length; i < len; i++) {
@@ -175,7 +171,12 @@ export function parseArgs(args) {
   return result;
 }
 
-export { assign, async, extract, fs, remove };
+export function resolve(...values) {
+  if (platform() === "win32") return pathToFileURL(fs.resolve(...values)).toString();
+  return fs.resolve(...values);
+}
+
+export { assign, async, extract, remove };
 
 async function getProjectLock(path) {
   if (fs.existsSync(path + "/package-lock.json")) return await importJSON(fs.resolve(path, "package-lock.json"));
@@ -205,4 +206,15 @@ function evaluate(value) {
   if (value == null || value === "true") return true;
   if (value === "false") return false;
   return value;
+}
+
+function ensurePath(value) {
+  try {
+    if (isAbsolute(value)) return value;
+    value = import.meta.resolve(value);
+    if (isAbsolute(value)) return value;
+    return fileURLToPath(value);
+  } catch {
+    return value;
+  }
 }
