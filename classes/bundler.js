@@ -21,23 +21,31 @@ export class Bundler {
     const files = [];
     const resources = {};
     assign(options, this.#options);
-    const [paths, exports, sideEffects] = extract(options, "paths", "exports", "sideEffects");
+    const [paths, exports, sideEffects, importAttributes] = extract(
+      options,
+      "paths",
+      "exports",
+      "sideEffects",
+      "importAttributes",
+    );
     options.entryPoints = [exports ? "@exports" : filename];
     options.bundle = true;
     options.outdir ??= "dist";
     options.legalComments ??= "none";
     options.keepNames ??= true;
     options.treeShaking ??= true;
-    options.define ??= {};
     options.plugins = [];
     options.minify ??= process.env.NODE_ENV === "production";
     options.format ??= options.globalName ? "iife" : "esm";
     options.target ??= "esnext";
-    options.define[`process`] = "undefined";
-    const keys = Object.keys(process.env);
-    for (let i = 0, len = keys.length; i < len; i++) {
-      if (/[():;,.\s]/.test(keys[i])) continue;
-      options.define[`process.env.${keys[i]}`] = JSON.stringify(process.env[keys[i]]);
+    options.define ??= {};
+    if (options.platform !== "node") {
+      options.define[`process`] = "undefined";
+      const keys = Object.keys(process.env);
+      for (let i = 0, len = keys.length; i < len; i++) {
+        if (/[():;,.\s]/.test(keys[i])) continue;
+        options.define[`process.env.${keys[i]}`] = JSON.stringify(process.env[keys[i]]);
+      }
     }
     options.plugins.unshift(
       setup({
@@ -49,6 +57,7 @@ export class Bundler {
         exports,
         sideEffects: sideEffects !== "none",
         platform: options.platform,
+        importAttributes,
       }),
     );
     const { outputFiles, errors, warnings } = await build(options);
@@ -69,7 +78,17 @@ export class Bundler {
   }
 }
 
-function setup({ files: bundlerFiles, resources: bundlerResources, filename, loader, paths = {}, exports, sideEffects, platform }) {
+function setup({
+  files: bundlerFiles,
+  resources: bundlerResources,
+  filename,
+  loader,
+  paths = {},
+  exports,
+  sideEffects,
+  platform,
+  importAttributes: bundlerImportAttributes = {},
+}) {
   const filter = /.*/;
   const basename = fs.basename(filename);
   const dirname = fs.dirname(filename);
@@ -89,11 +108,11 @@ function setup({ files: bundlerFiles, resources: bundlerResources, filename, loa
           (final, { builtin, file }) => ({ final, builtin, file }),
         );
         if (!builtin && file) return { path: final, sideEffects };
-        if (platform === "node") return { external: true };
         if (!builtin) return { sideEffects };
+        if (platform === "node") return { external: true };
         return { path: final, namespace: "ignore" };
       }),
-      build.onLoad({ filter }, async ({ path, namespace, with: importAttributes = {} }) => {
+      build.onLoad({ filter }, async ({ path, namespace, with: importAttributes }) => {
         if (namespace === "ignore") return { contents: "" };
         if (namespace === "window") return { contents: `module.exports = window.${path};` };
         if (namespace === "global") return { contents: `module.exports = global.${path};` };
@@ -103,7 +122,11 @@ function setup({ files: bundlerFiles, resources: bundlerResources, filename, loa
             resolveDir: dirname,
           };
         importAttributes.bundler = true;
-        const { source, resources, files = [] } = await loader.load(path, { importAttributes }, () => ({}));
+        const {
+          source,
+          resources,
+          files = [],
+        } = await loader.load(path, { importAttributes: { ...bundlerImportAttributes, ...importAttributes } }, () => ({}));
         bundlerFiles.push(...files);
         if (!source) return { loader: "js" };
         for (let i = 0, len = resources?.length || 0; i < len; i++) {

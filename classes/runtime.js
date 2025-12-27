@@ -32,7 +32,7 @@ export class Runtime {
       this.#loaders = {};
       for (let i = 0, len = loaders?.length || 0; i < len; i++) {
         let { main, type, filter } = loaders[i];
-        const { default: LoaderClass } = await import(main);
+        const { default: LoaderClass } = await import(pathToFileURL(main).href);
         if (!(LoaderClass?.prototype instanceof Loader)) throw new Runtime.Error(`Invalid loader "${loaders[i].main}"`);
         if (!type) type = FALLBACK;
         if (!this.#loaders[type]) this.#loaders[type] = {};
