@@ -38,6 +38,7 @@ export class Bundler {
     options.minify ??= process.env.NODE_ENV === "production";
     options.format ??= options.globalName ? "iife" : "esm";
     options.target ??= "esnext";
+    options.logLevel ??= "error";
     options.define ??= {};
     if (options.platform !== "node") {
       options.define[`process`] = "undefined";

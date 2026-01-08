@@ -2,6 +2,7 @@ export { Bundler } from "./classes/bundler.js";
 export { Command } from "./classes/command.js";
 export { Loader } from "./classes/loader.js";
 export { Runtime } from "./classes/runtime.js";
+export { TestRunner } from "./classes/test-runner.js";
 export { default as BundleCommand } from "./commands/bundle.js";
 export { default as DefaultCommand } from "./commands/default.js";
 export { default as ProjectCommand } from "./commands/project.js";
