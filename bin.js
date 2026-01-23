@@ -44,8 +44,13 @@ start(fs.resolve(dirname, "main.js"), argv, {
 });
 
 function start(...args) {
-  fork(...args).on("exit", (code) => {
-    if (env.NODE_AUTO_RESTART && code != 0) start(...args);
+  const subprocess = fork(...args);
+  let restart = false;
+  subprocess.on("message", (message) => {
+    if (message.restart) ((restart = true), subprocess.kill());
+  });
+  subprocess.on("exit", (code) => {
+    if ((env.NODE_AUTO_RESTART && code != 0) || restart) start(...args);
     else process.exit(code);
   });
 }

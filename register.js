@@ -37,6 +37,7 @@ const config = await importConfig({
   },
 });
 const command = new (await import(config.cli.commands[process.argv[2]] || config.cli.commands["default"])).default();
+process.restart = () => process.send({ restart: true });
 process.vistta = {
   loaders: command.loaders,
   resolvers: command.resolvers,
