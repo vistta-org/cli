@@ -30,7 +30,7 @@ export default class extends DefaultCommand {
     this.define("global", "suite", this.#testRunner.suite);
     this.define("global", "test", this.#testRunner.test);
     this.define("global", "expect", this.#testRunner.expect);
-    if (args.length === 0) args = ["**/*.test.js", "**/*.test.ts"];
+    if (args.length === 0) args = this.resolvers.map((ext) => `**/*.test.${ext}`);
     for (let i = 0, len = args.length; i < len; i++) args[i] = fs.resolve(cwd, args[i]);
     const entries = fs.glob(args);
     let entry = (await entries.next())?.value;
