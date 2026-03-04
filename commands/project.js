@@ -16,11 +16,7 @@ const HELP = {
 };
 
 export default class extends Command {
-  constructor(options) {
-    super(options);
-  }
-
-  help(_, command) {
+  async help(_, command) {
     switch (command) {
       case "name":
         console.print(capitalize(HELP["name"]));

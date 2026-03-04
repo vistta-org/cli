@@ -17,20 +17,25 @@ export class Runtime {
   #init;
   #loaders;
   #resolvers;
+  /** @type {Record<string, any>} */
   #options;
 
   get loaders() {
     return this.#loaders;
   }
 
+  /** @returns {Record<string, any>} */
   get options() {
     return this.#options;
   }
 
-  constructor({ loaders, resolvers, options }) {
+  /**
+   * @param {{ loaders?: any[]; resolvers?: string[]; options?: Record<string, any> }} [config]
+   */
+  constructor({ loaders = [], resolvers = [], options = {} } = {}) {
     this.#init = async () => {
       this.#loaders = {};
-      for (let i = 0, len = loaders?.length || 0; i < len; i++) {
+      for (let i = 0, len = loaders.length; i < len; i++) {
         let { main, type, filter } = loaders[i];
         const { default: LoaderClass } = await import(pathToFileURL(main).href);
         if (!(LoaderClass?.prototype instanceof Loader)) throw new Runtime.Error(`Invalid loader "${loaders[i].main}"`);

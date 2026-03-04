@@ -14,7 +14,7 @@ export default class extends DefaultCommand {
     this.define("env", "NODE_ENV", "testing");
   }
 
-  help() {
+  async help() {
     console.print("Runs all the tests files that match the pattern/s in the current project");
     console.print("\nUsage:");
     console.print("vistta test [...patterns]\tRuns all the tests files that match the pattern/s in the current project");

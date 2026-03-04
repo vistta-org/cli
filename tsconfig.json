@@ -3,6 +3,7 @@
     "strict": false,
     "noEmit": true,
     "allowJs": true,
+    "checkJs": true,
     "resolveJsonModule": true,
     "module": "esnext",
     "target": "ESNext",
@@ -10,9 +11,9 @@
     "moduleResolution": "bundler",
     "skipLibCheck": true,
     "jsx": "react",
-    "typeRoots": ["./global.d.ts"],
     "paths": {
       "@/*": ["./*"]
     }
-  }
+  },
+  "include": ["./**/*.js", "./global.d.ts"]
 }

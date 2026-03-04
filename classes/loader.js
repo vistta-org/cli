@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 export class Loader {
-  constructor() {}
+  constructor(options) {}
 
   /**
    * Main method to execute the loader.

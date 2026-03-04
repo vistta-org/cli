@@ -9,7 +9,7 @@ export default class TypescriptLoader extends Loader {
     this.compilerOptions = options.compiler || {};
   }
 
-  async load(source) {
+  async load(source, options) {
     try {
       return await transform(source, {
         format: "esm",

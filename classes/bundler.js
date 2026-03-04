@@ -5,18 +5,68 @@ import { assign, extract } from "../utils.js";
 import { Command } from "./command.js";
 import { Runtime } from "./runtime.js";
 
+/**
+ * @typedef {{
+ *  paths?: Record<string, any>;
+ *  exports?: string;
+ *  sideEffects?: "none" | string | boolean;
+ *  importAttributes?: Record<string, any>;
+ *  [key: string]: any;
+ * }} BundlerRunOptions
+ */
+
+/**
+ * @typedef {{
+ *  code: string;
+ *  files: string[];
+ *  resources: Record<string, any>;
+ *  errors: any[];
+ *  warnings: any[];
+ *  warning?: any;
+ * }} BundlerRunResult
+ */
+
+/**
+ * @typedef {{
+ *  files: string[];
+ *  resources: Record<string, any>;
+ *  filename: string;
+ *  loader: Runtime;
+ *  paths?: Record<string, any>;
+ *  exports?: string;
+ *  sideEffects?: boolean;
+ *  platform?: string;
+ *  importAttributes?: Record<string, any>;
+ * }} SetupOptions
+ */
+
 export class Bundler {
+  /** @type {Runtime} */
   #loader;
+  /** @type {BundlerRunOptions} */
   #options;
 
+  /**
+   * @param {Runtime | Command | undefined} [arg1]
+   */
   constructor(arg1) {
     if (arg1 instanceof Runtime) this.#loader = arg1;
-    else if (arg1 instanceof Command) this.#loader = new Runtime(arg1);
+    else if (arg1 instanceof Command)
+      this.#loader = new Runtime({
+        loaders: arg1.loaders,
+        resolvers: arg1.resolvers,
+        options: process.vistta?.options || {},
+      });
     else if (!arg1) this.#loader = new Runtime(process.vistta);
     else throw new Error("Invalid first argument. Expected Loader or CLI instance.");
     this.#options = this.#loader?.options?.bundler ?? {};
   }
 
+  /**
+   * @param {string} filename
+   * @param {BundlerRunOptions} [options]
+   * @returns {Promise<BundlerRunResult>}
+   */
   async run(filename, options = {}) {
     const files = [];
     const resources = {};
@@ -71,6 +121,11 @@ export class Bundler {
     };
   }
 
+  /**
+   * @param {string} filename
+   * @param {BundlerRunOptions} [options]
+   * @returns {Promise<any>}
+   */
   async import(filename, options = {}) {
     options.write = false;
     const { code, errors, warning } = await this.run(filename, options);
@@ -79,6 +134,9 @@ export class Bundler {
   }
 }
 
+/**
+ * @param {SetupOptions} options
+ */
 function setup({
   files: bundlerFiles,
   resources: bundlerResources,

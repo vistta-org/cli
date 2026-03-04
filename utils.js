@@ -22,7 +22,7 @@ export const ENABLED_NODE_OPTIONS = {
 
 export async function importJSON(filepath) {
   try {
-    return JSON.parse(await fs.readFile(filepath));
+    return JSON.parse(String(await fs.readFile(filepath)));
   } catch {
     return {};
   }
@@ -31,7 +31,7 @@ export async function importJSON(filepath) {
 export async function importEnv(filepath) {
   try {
     const env = {};
-    const entries = (await fs.readFile(filepath, "utf8")).split("\n");
+    const entries = String(await fs.readFile(filepath, "utf8")).split("\n");
     for (let i = 0, len = entries.length; i < len; i++) {
       const [key, value] = entries[i].split("=");
       env[key] = value;
@@ -162,7 +162,7 @@ export function run(script, ...args) {
 }
 
 export function parseArgs(args) {
-  const result = [[], {}];
+  const result = /** @type {[string[], Record<string, any>]} */ ([[], {}]);
   for (let i = 0, len = args.length; i < len; i++) {
     const [option, value] = args[i].toLowerCase().split("=");
     if (option.startsWith("--")) result[1][option.slice(2)] = evaluate(value);

@@ -15,7 +15,7 @@ global.loaders = {
   shared: new Proxy(shared, {
     set(_, prop, value) {
       port1.postMessage(JSON.stringify({ sync: true, prop, value }));
-      return Reflect.set(...arguments);
+      return Reflect.set(shared, prop, value);
     },
   }),
 };
@@ -24,7 +24,7 @@ port1.on("message", (msg) => {
   if (event) events[event]?.forEach((callback) => callback(...args));
   else if (sync) shared[prop] = value;
 });
-port1.unref();
+/** @type {any} */ (port1).unref?.();
 
 const config = await importConfig({
   cli: {

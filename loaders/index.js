@@ -8,12 +8,12 @@ export async function initialize({ loaders, resolvers, options, port }) {
     const shared = {};
     const events = {};
     global.main = {
-      send: (event, ...args) => args.port.postMessage(JSON.stringify({ event, args })),
+      send: (event, ...args) => port.postMessage(JSON.stringify({ event, args })),
       on: (event, callback) => (events[event] ? events[event].push(callback) : (events[event] = [callback])),
       shared: new Proxy(shared, {
         set(_, prop, value) {
           port.postMessage(JSON.stringify({ sync: true, prop, value }));
-          return Reflect.set(...arguments);
+          return Reflect.set(shared, prop, value);
         },
       }),
     };

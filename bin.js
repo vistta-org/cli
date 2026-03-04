@@ -43,14 +43,15 @@ start(fs.resolve(dirname, "main.js"), argv, {
   stdio: env.NODE_SILENT ? "ignore" : "inherit",
 });
 
-function start(...args) {
-  const subprocess = fork(...args);
+function start(modulePath, argv, options) {
+  const subprocess = fork(modulePath, argv, options);
   let restart = false;
   subprocess.on("message", (message) => {
-    if (message.restart) ((restart = true), subprocess.kill());
+    if (typeof message === "object" && message && "restart" in message && message.restart)
+      ((restart = true), subprocess.kill());
   });
   subprocess.on("exit", (code) => {
-    if ((env.NODE_AUTO_RESTART && code != 0) || restart) start(...args);
+    if ((env.NODE_AUTO_RESTART && code != 0) || restart) start(modulePath, argv, options);
     else process.exit(code);
   });
 }

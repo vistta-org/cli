@@ -1,10 +1,56 @@
+/**
+ * @typedef {{ only?: boolean; filter?: string }} TestRunnerOptions
+ */
+
+/**
+ * @typedef {{
+ *  name: string;
+ *  start?: number;
+ *  end?: number;
+ *  status?: "pass" | "fail";
+ *  result?: any;
+ *  error?: any;
+ * }} TestResult
+ */
+
+/**
+ * @typedef {{ only: boolean; name: string; callback: () => any }} SuiteDefinition
+ */
+
+/**
+ * @typedef {{ only?: boolean; name?: string; tests: TestResult[]; time?: number }} SuiteResult
+ */
+
+/**
+ * @typedef {{
+ *  toEqual: (value: any, unit?: string) => void;
+ *  toBeLessThan: (value: any, unit?: string) => void;
+ *  toBeGreaterThan: (value: any, unit?: string) => void;
+ *  toInclude: (value: any) => void;
+ *  toMatch: (regex: string | RegExp) => void;
+ *  toThrow: (message?: string) => void;
+ * }} ExpectMatcherSet
+ */
+
+/**
+ * @typedef {ExpectMatcherSet & { not: ExpectMatcherSet }} ExpectMatchers
+ */
+
 export class TestRunner {
+  /** @type {TestRunnerOptions} */
   #options = {};
+  /** @type {SuiteDefinition[]} */
   #suites = [];
+  /** @type {SuiteResult[]} */
   #results;
+  /** @type {SuiteResult | null} */
   #active;
+  /** @type {number} */
   #running;
 
+  /**
+   * @param {TestRunnerOptions} [options]
+   */
   constructor(options = {}) {
     this.#options = options;
     this.suite = this.#suite.bind(this, false);
@@ -13,6 +59,9 @@ export class TestRunner {
     this.test.only = this.#test.bind(this, true);
   }
 
+  /**
+   * @returns {Promise<SuiteResult[]>}
+   */
   async run() {
     this.#running = 0;
     this.#results = [];
@@ -30,11 +79,21 @@ export class TestRunner {
     return this.#results;
   }
 
+  /**
+   * @param {boolean} only
+   * @param {string} name
+   * @param {() => any} callback
+   */
   async #suite(only, name, callback) {
     if (this.#active) throw new Error("Suites cannot be stacked");
     this.#suites.push({ only, name, callback });
   }
 
+  /**
+   * @param {boolean} only
+   * @param {string} name
+   * @param {() => any | Promise<any>} callback
+   */
   async #test(only, name, callback) {
     if (
       (this.#options.filter && !name.match(new RegExp(this.#options.filter, "i"))) ||
@@ -58,6 +117,11 @@ export class TestRunner {
     this.#running--;
   }
 
+  /**
+   * @param {any} target
+   * @param {string} [label]
+   * @returns {ExpectMatchers}
+   */
   expect(target, label) {
     return {
       not: {

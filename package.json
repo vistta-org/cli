@@ -5,6 +5,7 @@
   "main": "index.js",
   "exports": {
     ".": "./index.js",
+    "./global": "./global.d.ts",
     "./config": "./tsconfig.json",
     "./commands/default": "./commands/default.js",
     "./commands/bundle": "./commands/bundle.js",
