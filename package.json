@@ -33,8 +33,8 @@
     "@vistta/console": "latest",
     "@vistta/fs": "latest",
     "@vistta/utils": "latest",
-    "esbuild": "^0.27.2",
-    "semver": "^7.7.3"
+    "esbuild": "^0.27.3",
+    "semver": "^7.7.4"
   },
   "author": "Tiago Terenas Almeida",
   "license": "Apache 2.0 with Commons Clause",

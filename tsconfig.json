@@ -11,9 +11,7 @@
     "moduleResolution": "bundler",
     "skipLibCheck": true,
     "jsx": "react",
-    "paths": {
-      "@/*": ["./*"]
-    }
+    "paths": {}
   },
   "include": ["./**/*.js", "./global.d.ts"]
 }
