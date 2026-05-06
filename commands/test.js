@@ -58,12 +58,20 @@ export default class extends DefaultCommand {
         const { name, status, start, end, result, error } = tests[n];
         if (!first || start < first) first = start;
         if (!last || end > last) last = end;
-        if (status === "pass") {
-          output += `  ${COLORS.GREEN}PASSED  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n${typeof result === "string" ? "\t" + COLORS.GREEN + result + COLORS.RESET + "\n" : ""}`;
-          passing++;
-        } else
-          output += `  ${COLORS.RED}FAILED  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n\t${COLORS.RED + error + COLORS.RESET}\n`;
-        total++;
+        switch (status) {
+          case "pass":
+            output += `  ${COLORS.GREEN}PASSED  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n${typeof result === "string" ? "\t" + COLORS.GREEN + result + COLORS.RESET + "\n" : ""}`;
+            passing++;
+            total++;
+            break;
+          case "fail":
+            output += `  ${COLORS.RED}FAILED  ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n\t${COLORS.RED + error + COLORS.RESET}\n`;
+            total++;
+            break;
+          case "skip":
+            output += `  ${COLORS.YELLOW}SKIPPED ${name} ${COLORS.RESET + COLORS.DIM}(${Math.round(end - start)}ms)${COLORS.RESET}\n`;
+            break;
+        }
       }
       if (total !== passing) failed = true;
       output += `${passing === total ? COLORS.GREEN : COLORS.RED}${passing}/${total} passing ${COLORS.RESET + COLORS.DIM}(${Math.round(last - first)}ms)${COLORS.RESET}\n`;

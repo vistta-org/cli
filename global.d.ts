@@ -10,6 +10,13 @@ interface CliRuntimeData {
 
 declare namespace NodeJS {
   interface Process {
+    argv: string[];
+    env: Record<string, string | undefined>;
+    chdir(directory: string): void;
+    cwd(): string;
+    exit(code?: number): never;
+    on(event: string, listener: (...args: any[]) => void): void;
+    send?(message: any): void;
     restart?: () => void;
     vistta: CliRuntimeData;
   }
@@ -27,8 +34,17 @@ declare var main: {
   shared: Record<string, any>;
 };
 
-declare function suite(name: string, callback: () => void): void;
-declare function test(name: string, callback: () => void | Promise<void>): void;
+declare var suite: {
+  (name: string, callback: () => void, options?: { only?: boolean; skip?: boolean }): void;
+  only(name: string, callback: () => void): void;
+  skip(name: string, callback: () => void): void;
+};
+
+declare var test: {
+  (name: string, callback: () => void, options?: { only?: boolean; skip?: boolean }): void;
+  only(name: string, callback: () => void): void;
+  skip(name: string, callback: () => void): void;
+};
 
 interface ExpectNotMatchers {
   toEqual(expected: any, unit?: string): void;

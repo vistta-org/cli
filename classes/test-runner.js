@@ -14,11 +14,11 @@
  */
 
 /**
- * @typedef {{ only: boolean; name: string; callback: () => any }} SuiteDefinition
+ * @typedef {{ only: boolean; skip: boolean; name: string; callback: () => any }} SuiteDefinition
  */
 
 /**
- * @typedef {{ only?: boolean; name?: string; tests: TestResult[]; time?: number }} SuiteResult
+ * @typedef {{ only?: boolean; skip?: boolean; name?: string; tests: TestResult[]; time?: number }} SuiteResult
  */
 
 /**
@@ -53,10 +53,12 @@ export class TestRunner {
    */
   constructor(options = {}) {
     this.#options = options;
-    this.suite = this.#suite.bind(this, false);
-    this.suite.only = this.#suite.bind(this, true);
-    this.test = this.#test.bind(this, false);
-    this.test.only = this.#test.bind(this, true);
+    this.suite = this.#suite.bind(this);
+    this.suite.only = (name, callback) => this.#suite(name, callback, { only: true });
+    this.suite.skip = (name, callback) => this.#suite(name, callback, { skip: true });
+    this.test = this.#test.bind(this);
+    this.test.only = (name, callback) => this.#test(name, callback, { only: true });
+    this.test.skip = (name, callback) => this.#test(name, callback, { skip: true });
   }
 
   /**
@@ -66,7 +68,7 @@ export class TestRunner {
     this.#running = 0;
     this.#results = [];
     for (const suite of this.#suites) {
-      this.#active = { only: suite.only, name: suite.name, tests: [] };
+      this.#active = { only: suite.only, name: suite.name, skip: suite.skip, tests: [] };
       try {
         await suite.callback();
       } catch {
@@ -80,28 +82,34 @@ export class TestRunner {
   }
 
   /**
-   * @param {boolean} only
    * @param {string} name
    * @param {() => any} callback
+   * @param {{ only?: boolean, skip?: boolean }} options
+   * @returns {Promise<void>}
    */
-  async #suite(only, name, callback) {
+  async #suite(name, callback, { only, skip } = {}) {
     if (this.#active) throw new Error("Suites cannot be stacked");
-    this.#suites.push({ only, name, callback });
+    this.#suites.push({ only, skip, name, callback });
   }
 
   /**
-   * @param {boolean} only
    * @param {string} name
    * @param {() => any | Promise<any>} callback
+   * @param {{ only?: boolean, skip?: boolean }} options
+   * @returns {Promise<void>}
    */
-  async #test(only, name, callback) {
+  async #test(name, callback, { only, skip } = {}) {
     if (
       (this.#options.filter && !name.match(new RegExp(this.#options.filter, "i"))) ||
       (this.#options.only && !(only || this.#active?.only))
     )
       return;
-    this.#running++;
     const test = { name };
+    if (skip || this.#active?.skip) {
+      test.status = "skip";
+      this.#active?.tests.push(test);
+      return;
+    } else this.#running++;
     test.start = performance();
     if (this.#active) this.#active.tests.push(test);
     else this.#results.push({ tests: [test], time: test.time });
@@ -197,6 +205,7 @@ export class TestRunner {
   }
 }
 
+// @ts-ignore
 function performance(time = process.hrtime()) {
   return time[0] * 1000 + time[1] / 1e6;
 }
