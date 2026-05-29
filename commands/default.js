@@ -39,7 +39,9 @@ export default class DefaultCommand extends Command {
       const modules = await (await import("../utils.js"))?.getOutdatedPackages(process.cwd());
       for (let i = 0, len = modules.length; i < len; i++) {
         const { name, current, wanted, latest } = modules[i];
-        if (current === wanted) console.print(`${COLORS.CYAN}Module "${name}" has a new version (${latest})${COLORS.RESET}`);
+        if (!current) console.print(`${COLORS.YELLOW}Module "${name}" is missing${COLORS.RESET}`);
+        else if (current === wanted)
+          console.print(`${COLORS.CYAN}Module "${name}" has a new version (${latest})${COLORS.RESET}`);
         else console.print(`${COLORS.YELLOW}Module "${name}" is outdated (${latest})${COLORS.RESET}`);
       }
     } catch {

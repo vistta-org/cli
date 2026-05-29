@@ -93,7 +93,14 @@ export async function getOutdatedPackages(dirname) {
       const packageName = keys[i];
       const { version, resolved, link } = packages["node_modules/" + packageName] || {};
       if (link) continue;
-      if (!version) throw new Error(`Module ${packageName} not found `);
+      if (!version) {
+        data[packageName] = {
+          package: path,
+          dev,
+        };
+        promises.push({ name: packageName });
+        continue;
+      }
       promises.push(
         new Promise((resolve, reject) =>
           fetch(resolved ? resolved.split("/-/")[0] + "/latest" : `https://registry.npmjs.org/${packageName}/latest`)
@@ -117,7 +124,11 @@ export async function getOutdatedPackages(dirname) {
     const module = data[values[i]?.name];
     module.name = values[i]?.name;
     module.latest = values[i]?.version;
-    if (!module || !module?.latest || !module?.current || !module?.wanted) throw new Error(`Internal Error`);
+    if (!module.current) {
+      result.push(module);
+      continue;
+    }
+    if (!module || !module?.latest || !module?.wanted) throw new Error(`Internal Error`);
     if (module.current === module.latest) continue;
     module.wanted = satisfies(module.latest, module.wanted) ? module.latest : module.current;
     result.push(module);
