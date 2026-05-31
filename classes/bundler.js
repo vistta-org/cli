@@ -182,11 +182,13 @@ function setup({
           };
         if (importAttributes.type === "bundler") delete importAttributes.type;
         importAttributes.bundler = true;
+        const mergedImportAttributes = { ...bundlerImportAttributes, ...importAttributes };
+        if (!importAttributes.type && mergedImportAttributes.type === "bundler") delete mergedImportAttributes.type;
         const {
           source,
           resources,
           files = [],
-        } = await loader.load(path, { importAttributes: { ...bundlerImportAttributes, ...importAttributes } }, () => ({}));
+        } = await loader.load(path, { importAttributes: mergedImportAttributes }, () => ({}));
         bundlerFiles.push(...files);
         if (!source) return { loader: "js" };
         for (let i = 0, len = resources?.length || 0; i < len; i++) {
