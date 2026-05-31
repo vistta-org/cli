@@ -102,12 +102,18 @@ export class Runtime {
 
     if (type === "bundler") {
       if (fs.isAbsolute(specifier)) context.file = true;
+      if (specifier.includes("notifications/app.jsx")) {
+        console.log("[RUNTIME resolve] bundler notifications/app.jsx:", specifier);
+      }
       return nextResolve(specifier, context);
     }
 
     const params = options.toString();
     specifier = pathToFileURL(specifier).href;
     if (params.length > 0) return nextResolve(`${specifier}?${params}`, context);
+    if (specifier.includes("notifications/app.jsx")) {
+      console.log("[RUNTIME resolve] notifications/app.jsx:", specifier);
+    }
     return nextResolve(specifier, context);
   }
 
