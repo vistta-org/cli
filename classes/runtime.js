@@ -102,7 +102,7 @@ export class Runtime {
 
     if (type === "bundler") {
       if (fs.isAbsolute(specifier)) context.file = true;
-      return nextResolve(specifier, context);
+      return nextResolve(`${specifier}?bundler=true`, context);
     }
 
     const params = options.toString();
