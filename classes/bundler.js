@@ -202,6 +202,7 @@ function setup({
             "has NotificationsApp:",
             source?.includes("NotificationsApp"),
           );
+          console.log(source);
         }
         bundlerFiles.push(...files);
         if (!source) return { loader: "js" };
