@@ -134,6 +134,10 @@ export class Runtime {
       });
     if (errors?.length) throw new Runtime.Error(loader.name || loader.constructor.name, `${errors.join("\n")}`);
     warnings?.forEach((warning) => console.warn(`${loader.name || loader.constructor.name} Loader Warning: ${warning}\n`));
+    if (path.includes("notifications/app.jsx")) {
+      console.log("[RUNTIME load] notifications/app.jsx source length:", code?.length);
+      console.log("[RUNTIME load] has NotificationsApp:", code?.includes("NotificationsApp"));
+    }
     return {
       format: "module",
       shortCircuit: true,
