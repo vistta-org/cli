@@ -102,18 +102,12 @@ export class Runtime {
 
     if (type === "bundler") {
       if (fs.isAbsolute(specifier)) context.file = true;
-      if (specifier.includes("notifications/app.jsx")) {
-        console.log("[RUNTIME resolve] bundler notifications/app.jsx:", specifier);
-      }
       return nextResolve(specifier, context);
     }
 
     const params = options.toString();
     specifier = pathToFileURL(specifier).href;
     if (params.length > 0) return nextResolve(`${specifier}?${params}`, context);
-    if (specifier.includes("notifications/app.jsx")) {
-      console.log("[RUNTIME resolve] notifications/app.jsx:", specifier);
-    }
     return nextResolve(specifier, context);
   }
 
@@ -140,10 +134,6 @@ export class Runtime {
       });
     if (errors?.length) throw new Runtime.Error(loader.name || loader.constructor.name, `${errors.join("\n")}`);
     warnings?.forEach((warning) => console.warn(`${loader.name || loader.constructor.name} Loader Warning: ${warning}\n`));
-    if (path.includes("notifications/app.jsx")) {
-      console.log("[RUNTIME load] notifications/app.jsx source length:", code?.length);
-      console.log("[RUNTIME load] has NotificationsApp:", code?.includes("NotificationsApp"));
-    }
     return {
       format: "module",
       shortCircuit: true,

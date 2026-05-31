@@ -180,6 +180,7 @@ function setup({
             contents: `export { ${exports} } from "./${basename}";`,
             resolveDir: dirname,
           };
+        delete importAttributes.type;
         importAttributes.bundler = true;
         const {
           source,
