@@ -1,6 +1,6 @@
 import fs from "@vistta/fs";
 import { build } from "esbuild";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { assign, extract } from "../utils.js";
 import { Command } from "./command.js";
 import { Runtime } from "./runtime.js";
@@ -155,26 +155,30 @@ function setup({
     name: "vistta",
     setup: (build) => (
       build.onResolve({ filter }, async ({ path, importer, resolveDir }) => {
-        if (path === "@exports") return { path: basename, namespace: "exports", sideEffects };
-        if (paths[path]) return Object.assign({ sideEffects }, paths[path]);
+        const cleanPath = path.replace(/\?__bundler__$/, "");
+        if (cleanPath === "@exports") return { path: basename, namespace: "exports", sideEffects };
+        if (paths[cleanPath]) return Object.assign({ sideEffects }, paths[cleanPath]);
         if (!fs.isAbsolute(importer)) importer = fs.resolve(resolveDir, importer);
         const { final, builtin, file } = await loader.resolve(
-          path,
+          cleanPath,
           {
             conditions: ["bundler"],
             parentURL: pathToFileURL(importer).href,
           },
           (final, { builtin, file }) => ({ final, builtin, file }),
         );
-        if (!builtin && file) return { path: final, sideEffects };
+        const cleanFinal = final.replace(/\?__bundler__$/, "");
+        const finalPath = cleanFinal.startsWith("file://") ? fileURLToPath(cleanFinal) : cleanFinal;
+        if (!builtin && file) return { path: finalPath, sideEffects };
         if (!builtin) return { sideEffects };
         if (platform === "node") return { external: true };
-        return { path: final, namespace: "ignore" };
+        return { path: finalPath, namespace: "ignore" };
       }),
       build.onLoad({ filter }, async ({ path, namespace, with: importAttributes }) => {
+        const cleanPath = path.replace(/\?__bundler__$/, "");
         if (namespace === "ignore") return { contents: "" };
-        if (namespace === "window") return { contents: `module.exports = window.${path};` };
-        if (namespace === "global") return { contents: `module.exports = global.${path};` };
+        if (namespace === "window") return { contents: `module.exports = window.${cleanPath};` };
+        if (namespace === "global") return { contents: `module.exports = global.${cleanPath};` };
         if (namespace === "exports")
           return {
             contents: `export { ${exports} } from "./${basename}";`,
@@ -183,27 +187,12 @@ function setup({
         if (importAttributes.type === "bundler") delete importAttributes.type;
         importAttributes.bundler = true;
         const mergedImportAttributes = { ...bundlerImportAttributes, ...importAttributes };
-        if (!importAttributes.type && mergedImportAttributes.type === "bundler") delete mergedImportAttributes.type;
-        if (path.includes("notifications/app.jsx")) {
-          console.log("[BUNDLER onLoad] path:", path);
-          console.log("[BUNDLER onLoad] importAttributes:", JSON.stringify(importAttributes));
-          console.log("[BUNDLER onLoad] bundlerImportAttributes:", JSON.stringify(bundlerImportAttributes));
-          console.log("[BUNDLER onLoad] merged:", JSON.stringify(mergedImportAttributes));
-        }
+        if (cleanPath.match(/\.(jsx|tsx)$/)) delete mergedImportAttributes.type;
         const {
           source,
           resources,
           files = [],
-        } = await loader.load(path, { importAttributes: mergedImportAttributes }, () => ({}));
-        if (path.includes("notifications/app.jsx")) {
-          console.log(
-            "[BUNDLER onLoad] source length:",
-            source?.length,
-            "has NotificationsApp:",
-            source?.includes("NotificationsApp"),
-          );
-          console.log(source);
-        }
+        } = await loader.load(cleanPath, { importAttributes: mergedImportAttributes }, () => ({}));
         bundlerFiles.push(...files);
         if (!source) return { loader: "js" };
         for (let i = 0, len = resources?.length || 0; i < len; i++) {

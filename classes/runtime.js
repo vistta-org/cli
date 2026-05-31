@@ -53,8 +53,11 @@ export class Runtime {
     [specifier, options] = specifier.split(/\?(.*)/);
     options = new URLSearchParams(options);
     const { parentURL = CWD, conditions: [type] = [] } = context;
+    const importType = context?.importAttributes?.type;
+    const isBundler = type === "bundler" || importType === "bundler";
+    const cleanParentURL = parentURL?.replace(/\?__bundler__$/, "");
     if (isBuiltin(specifier)) {
-      if (type === "bundler") context.builtin = true;
+      if (isBundler) context.builtin = true;
       return nextResolve(specifier, context);
     }
 
@@ -79,7 +82,7 @@ export class Runtime {
     if (specifier?.startsWith("file://")) specifier = fileURLToPath(specifier);
 
     if (!fs.isAbsolute(specifier))
-      specifier = fs.resolve(parentURL?.startsWith("file://") ? fs.dirname(parentURL) : parentURL, specifier);
+      specifier = fs.resolve(cleanParentURL?.startsWith("file://") ? fs.dirname(cleanParentURL) : cleanParentURL, specifier);
     const len = this.#resolvers.length;
     if (fs.existsSync(specifier)) {
       if (fs.isDirectory(specifier)) {
@@ -100,9 +103,10 @@ export class Runtime {
         }
       }
 
-    if (type === "bundler") {
+    if (isBundler) {
       if (fs.isAbsolute(specifier)) context.file = true;
-      return nextResolve(`${specifier}?bundler=true`, context);
+      const bundlerUrl = pathToFileURL(specifier).href + "?__bundler__";
+      return nextResolve(bundlerUrl, context);
     }
 
     const params = options.toString();
@@ -114,8 +118,8 @@ export class Runtime {
   async load(url, context, nextLoad) {
     if (isBuiltin(url)) return nextLoad(url, context);
     const { ...options } = context?.importAttributes || {};
-    url = options.bundler ? pathToFileURL(url.split("?")[0]).href : url.split("?")[0];
-    const path = fileURLToPath(url);
+    const cleanUrl = url.split("?")[0];
+    const path = cleanUrl.startsWith("file://") ? fileURLToPath(cleanUrl) : cleanUrl;
     const loader = match(this.#loaders, path, options.type);
     if (!loader) return nextLoad(url, context);
     options.path = path;

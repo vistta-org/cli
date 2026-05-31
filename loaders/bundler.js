@@ -6,6 +6,7 @@ export default class BundlerLoader extends Loader {
   async load(_, { path, ...options }) {
     options.write = false;
     remove(options, "type", "extension");
+    if (options.importAttributes?.type === "bundler") delete options.importAttributes.type;
     const runtime = /** @type {import("../classes/runtime").Runtime} */ (/** @type {unknown} */ (this));
     const { code, files, resources, errors, warnings } = await new Bundler(runtime).run(path, options);
     return {
