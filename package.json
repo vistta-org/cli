@@ -36,6 +36,9 @@
     "esbuild": "^0.28.0",
     "semver": "^7.8.1"
   },
+  "devDependencies": {
+    "@types/node": "^25.9.1"
+  },
   "author": "Tiago Terenas Almeida",
   "license": "Apache 2.0 with Commons Clause",
   "description": "Vistta CLI is a framework for extending the Node.js loader API and building reusable, customizable commands tools"

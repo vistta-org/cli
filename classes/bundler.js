@@ -3,7 +3,7 @@ import { build } from "esbuild";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { assign, extract } from "../utils.js";
 import { Command } from "./command.js";
-import { Runtime } from "./runtime.js";
+import { Runtime, stripBundler } from "./runtime.js";
 
 /**
  * @typedef {{
@@ -155,7 +155,7 @@ function setup({
     name: "vistta",
     setup: (build) => (
       build.onResolve({ filter }, async ({ path, importer, resolveDir }) => {
-        const cleanPath = path.replace(/\?__bundler__$/, "");
+        const cleanPath = stripBundler(path);
         if (cleanPath === "@exports") return { path: basename, namespace: "exports", sideEffects };
         if (paths[cleanPath]) return Object.assign({ sideEffects }, paths[cleanPath]);
         if (!fs.isAbsolute(importer)) importer = fs.resolve(resolveDir, importer);
@@ -167,7 +167,7 @@ function setup({
           },
           (final, { builtin, file }) => ({ final, builtin, file }),
         );
-        const cleanFinal = final.replace(/\?__bundler__$/, "");
+        const cleanFinal = stripBundler(final);
         const finalPath = cleanFinal.startsWith("file://") ? fileURLToPath(cleanFinal) : cleanFinal;
         if (!builtin && file) return { path: finalPath, sideEffects };
         if (!builtin) return { sideEffects };
@@ -175,7 +175,7 @@ function setup({
         return { path: finalPath, namespace: "ignore" };
       }),
       build.onLoad({ filter }, async ({ path, namespace, with: importAttributes }) => {
-        const cleanPath = path.replace(/\?__bundler__$/, "");
+        const cleanPath = stripBundler(path);
         if (namespace === "ignore") return { contents: "" };
         if (namespace === "window") return { contents: `module.exports = window.${cleanPath};` };
         if (namespace === "global") return { contents: `module.exports = global.${cleanPath};` };

@@ -5,6 +5,27 @@ import { Loader } from "./loader.js";
 
 const CWD = process.cwd();
 const FALLBACK = "*";
+const BUNDLER_SUFFIX = "?__bundler__";
+const BUNDLER_SUFFIX_RE = /\?__bundler__$/;
+
+/**
+ * Append the bundler marker to a URL/path so it occupies a distinct slot in
+ * Node's ESM module cache from the same file imported without the marker.
+ * @param {string} url
+ * @returns {string}
+ */
+export function markBundler(url) {
+  return BUNDLER_SUFFIX_RE.test(url) ? url : url + BUNDLER_SUFFIX;
+}
+
+/**
+ * Remove the bundler marker from a URL/path if present.
+ * @param {string | undefined | null} url
+ * @returns {string}
+ */
+export function stripBundler(url) {
+  return url ? url.replace(BUNDLER_SUFFIX_RE, "") : "";
+}
 
 export class Runtime {
   static Error = class extends Error {
@@ -55,7 +76,7 @@ export class Runtime {
     const { parentURL = CWD, conditions: [type] = [] } = context;
     const importType = context?.importAttributes?.type;
     const isBundler = type === "bundler" || importType === "bundler";
-    const cleanParentURL = parentURL?.replace(/\?__bundler__$/, "");
+    const cleanParentURL = stripBundler(parentURL);
     if (isBuiltin(specifier)) {
       if (isBundler) context.builtin = true;
       return nextResolve(specifier, context);
@@ -105,8 +126,7 @@ export class Runtime {
 
     if (isBundler) {
       if (fs.isAbsolute(specifier)) context.file = true;
-      const bundlerUrl = pathToFileURL(specifier).href + "?__bundler__";
-      return nextResolve(bundlerUrl, context);
+      return nextResolve(markBundler(pathToFileURL(specifier).href), context);
     }
 
     const params = options.toString();
