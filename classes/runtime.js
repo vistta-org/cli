@@ -1,31 +1,8 @@
 import fs from "@vistta/fs";
 import { isBuiltin } from "node:module";
 import { fileURLToPath, pathToFileURL, URLSearchParams } from "node:url";
+import { CWD, FALLBACK, markAttributes, markBundler, stripBundler, WITH_TYPE_RE } from "../utils.js";
 import { Loader } from "./loader.js";
-
-const CWD = process.cwd();
-const FALLBACK = "*";
-const BUNDLER_SUFFIX = "?__bundler__";
-const BUNDLER_SUFFIX_RE = /\?__bundler__$/;
-
-/**
- * Append the bundler marker to a URL/path so it occupies a distinct slot in
- * Node's ESM module cache from the same file imported without the marker.
- * @param {string} url
- * @returns {string}
- */
-export function markBundler(url) {
-  return BUNDLER_SUFFIX_RE.test(url) ? url : url + BUNDLER_SUFFIX;
-}
-
-/**
- * Remove the bundler marker from a URL/path if present.
- * @param {string | undefined | null} url
- * @returns {string}
- */
-export function stripBundler(url) {
-  return url ? url.replace(BUNDLER_SUFFIX_RE, "") : "";
-}
 
 export class Runtime {
   static Error = class extends Error {
@@ -129,27 +106,22 @@ export class Runtime {
       return nextResolve(markBundler(pathToFileURL(specifier).href), context);
     }
 
+    let query = "";
     const params = options.toString();
-    specifier = pathToFileURL(specifier).href;
-    if (params.length > 0) return nextResolve(`${specifier}?${params}`, context);
-    return nextResolve(specifier, context);
+    if (params) query = params;
+    const attrSuffix = markAttributes(context?.importAttributes);
+    if (attrSuffix) query += (query ? "&" : "") + attrSuffix;
+    let url = pathToFileURL(specifier).href;
+    if (query) url += (url.includes("?") ? "&" : "?") + query;
+    return nextResolve(url, context);
   }
 
   async load(url, context, nextLoad) {
     if (isBuiltin(url)) return nextLoad(url, context);
     const { ...options } = context?.importAttributes || {};
-    const cleanUrl = url.split("?")[0];
+    const cleanUrl = url.replace(WITH_TYPE_RE, "").split("?")[0];
     const path = cleanUrl.startsWith("file://") ? fileURLToPath(cleanUrl) : cleanUrl;
     const loader = match(this.#loaders, path, options.type);
-    if (/aida[\\/]service|bookmarks[\\/]service/.test(path))
-      console.debug(
-        "[runtime.load] url =",
-        url,
-        "| type =",
-        options.type,
-        "| matchedLoader =",
-        loader ? loader.constructor.name : "null(passthrough)",
-      );
     if (!loader) return nextLoad(url, context);
     options.path = path;
     options.extension = fs.extname(url).slice(1);

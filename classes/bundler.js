@@ -1,9 +1,9 @@
 import fs from "@vistta/fs";
 import { build } from "esbuild";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { assign, extract } from "../utils.js";
+import { assign, extract, stripBundler } from "../utils.js";
 import { Command } from "./command.js";
-import { Runtime, stripBundler } from "./runtime.js";
+import { Runtime } from "./runtime.js";
 
 /**
  * @typedef {{

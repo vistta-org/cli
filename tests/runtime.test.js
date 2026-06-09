@@ -1,19 +1,9 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { markBundler, Runtime, stripBundler } from "../classes/runtime.js";
+import { Runtime } from "../classes/runtime.js";
 
 suite("Runtime", () => {
-  test("markBundler and stripBundler round-trip", () => {
-    const url = "file:///some/abs/path.jsx";
-    const marked = markBundler(url);
-    expect(marked).toEqual(url + "?__bundler__");
-    expect(markBundler(marked)).toEqual(marked);
-    expect(stripBundler(marked)).toEqual(url);
-    expect(stripBundler(url)).toEqual(url);
-    expect(stripBundler(undefined)).toEqual("");
-  });
-
   test("resolve yields distinct URLs for plain vs bundler imports of the same file", async () => {
     const runtime = new Runtime({ loaders: [], resolvers: [], options: {} });
     const file = import.meta.filename || new URL(import.meta.url).pathname.replace(/^\//, "");

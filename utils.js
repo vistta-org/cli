@@ -6,6 +6,11 @@ import { isAbsolute } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { inc, satisfies, valid } from "semver";
 
+export const CWD = process.cwd();
+export const FALLBACK = "*";
+export const BUNDLER_SUFFIX = "?__bundler__";
+export const BUNDLER_SUFFIX_RE = /\?__bundler__$/;
+export const WITH_TYPE_RE = /[?&]__with_type=([^&#]*)/;
 export const ENABLED_NODE_OPTIONS = {
   "-w": "NODE_WATCH",
   "--watch": "NODE_WATCH",
@@ -184,6 +189,41 @@ export function parseArgs(args) {
 export function resolve(...values) {
   if (platform() === "win32") return pathToFileURL(fs.resolve(...values)).toString();
   return fs.resolve(...values);
+}
+
+/**
+ * Append the bundler marker to a URL/path so it occupies a distinct slot in
+ * Node's ESM module cache from the same file imported without the marker.
+ * @param {string} url
+ * @returns {string}
+ */
+export function markBundler(url) {
+  return BUNDLER_SUFFIX_RE.test(url) ? url : url + BUNDLER_SUFFIX;
+}
+
+/**
+ * Remove the bundler marker from a URL/path if present.
+ * @param {string | undefined | null} url
+ * @returns {string}
+ */
+export function stripBundler(url) {
+  return url ? url.replace(BUNDLER_SUFFIX_RE, "") : "";
+}
+
+/**
+ * Build a stable, sorted query string encoding the import attributes so that
+ * two imports of the same file with different `with: { ... }` attributes land
+ * in distinct ESM module cache slots. Mirrors the bundler marker pattern.
+ * @param {Record<string, any> | undefined | null} attrs
+ * @returns {string}
+ */
+export function markAttributes(attrs) {
+  if (!attrs) return "";
+  const keys = Object.keys(attrs)
+    .filter((k) => attrs[k] != null)
+    .sort();
+  if (keys.length === 0) return "";
+  return keys.map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(String(attrs[k]))}`).join("&");
 }
 
 export { assign, async, extract, remove };
