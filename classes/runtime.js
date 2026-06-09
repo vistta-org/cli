@@ -141,6 +141,15 @@ export class Runtime {
     const cleanUrl = url.split("?")[0];
     const path = cleanUrl.startsWith("file://") ? fileURLToPath(cleanUrl) : cleanUrl;
     const loader = match(this.#loaders, path, options.type);
+    if (/aida[\\/]service|bookmarks[\\/]service/.test(path))
+      console.debug(
+        "[runtime.load] url =",
+        url,
+        "| type =",
+        options.type,
+        "| matchedLoader =",
+        loader ? loader.constructor.name : "null(passthrough)",
+      );
     if (!loader) return nextLoad(url, context);
     options.path = path;
     options.extension = fs.extname(url).slice(1);
