@@ -19,9 +19,6 @@
   "bin": {
     "vistta": "bin.js"
   },
-  "scripts": {
-    "postinstall": ""
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/vistta-org/cli.git"
@@ -35,9 +32,6 @@
     "@vistta/utils": "latest",
     "esbuild": "^0.28.0",
     "semver": "^7.8.1"
-  },
-  "devDependencies": {
-    "@types/node": "^25.9.1"
   },
   "author": "Tiago Terenas Almeida",
   "license": "Apache 2.0 with Commons Clause",
