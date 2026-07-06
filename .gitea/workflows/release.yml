@@ -38,17 +38,22 @@ jobs:
           token: ${{ secrets.TOKEN }}
           fetch-depth: 0
           submodules: true
+
       - name: Setup Node
-        run: npm ci
+        run: npm run setup:ci
+
       - name: Module Validation
         working-directory: ./packages/${{ env.module }}
         run: npx vistta project outdated
+
       - name: Eslint Validation
         working-directory: ./packages/${{ env.module }}
         run: npx eslint .
+
       - name: Typescript Validation
         working-directory: ./packages/${{ env.module }}
         run: npx tsc
+
       - name: Unit Tests
         working-directory: ./packages/${{ env.module }}
         run: npx vistta test
@@ -65,6 +70,7 @@ jobs:
         with:
           ref: ${{ env.ref }}
           token: ${{ secrets.TOKEN }}
+
       - name: NPM Release
         uses: tiagomta/nodejs-run@v1
         id: npm
@@ -92,6 +98,7 @@ jobs:
             await git.reset("--hard", "${{ env.ref }}");
             await git.push("origin", "master", "--force");
             result = version;
+
       - name: Gitea Release
         uses: tiagomta/nodejs-run@v1
         with:
