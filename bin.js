@@ -9,7 +9,7 @@ const dirname = import.meta.dirname;
 const cwd = process.cwd();
 const rootPackage = await importJSON(fs.resolve(dirname, "package.json"));
 const projectPackage = await importJSON(fs.resolve(cwd, "package.json"));
-const env = await importEnv(fs.resolve(cwd, ".env"));
+const env = { ...process.env, ...(await importEnv(fs.resolve(cwd, ".env"))) };
 const projectEnvKeys = Object.keys(projectPackage?.env || {});
 for (let i = 0, len = projectEnvKeys.length; i < len; i++) env[projectEnvKeys[i]] = projectPackage.env[projectEnvKeys[i]];
 env.NODE_ENV = "production";
