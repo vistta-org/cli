@@ -179,7 +179,10 @@ export function run(script, ...args) {
 export function parseArgs(args) {
   const result = /** @type {[string[], Record<string, any>]} */ ([[], {}]);
   for (let i = 0, len = args.length; i < len; i++) {
-    const [option, value] = args[i].toLowerCase().split("=");
+    const lower = args[i].toLowerCase();
+    const eq = lower.indexOf("=");
+    const option = eq === -1 ? lower : lower.slice(0, eq);
+    const value = eq === -1 ? undefined : args[i].slice(eq + 1);
     if (option.startsWith("--")) result[1][option.slice(2)] = evaluate(value);
     else result[0].push(args[i]);
   }
