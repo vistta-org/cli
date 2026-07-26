@@ -28,9 +28,9 @@ import { Runtime } from "./runtime.js";
 
 /**
  * @typedef {{
+ *  entries: string[];
  *  files: string[];
  *  resources: Record<string, any>;
- *  filename: string;
  *  loader: Runtime;
  *  paths?: Record<string, any>;
  *  exports?: string;
@@ -63,14 +63,14 @@ export class Bundler {
   }
 
   /**
-   * @param {string} filename
+   * @param {string | string[]} target
    * @param {BundlerRunOptions} [options]
    * @returns {Promise<BundlerRunResult>}
    */
-  async run(filename, options = {}) {
+  async run(target, options = {}) {
     const files = [];
     const resources = {};
-    assign(options, this.#options);
+    options = assign({ ...options }, this.#options);
     const [paths, exports, sideEffects, importAttributes] = extract(
       options,
       "paths",
@@ -78,7 +78,10 @@ export class Bundler {
       "sideEffects",
       "importAttributes",
     );
-    options.entryPoints = [exports ? "@exports" : filename];
+    const multiple = Array.isArray(target);
+    if (exports && multiple) throw new Error("Cannot use 'exports' option with multiple entry points");
+    const entries = multiple ? target : [target];
+    options.entryPoints = exports ? ["@exports"] : multiple ? ["@bundle"] : entries;
     options.bundle = true;
     options.outdir ??= "dist";
     options.legalComments ??= "none";
@@ -100,9 +103,9 @@ export class Bundler {
     }
     options.plugins.unshift(
       setup({
+        entries,
         loader: this.#loader,
         paths,
-        filename,
         files,
         resources,
         exports,
@@ -112,6 +115,10 @@ export class Bundler {
       }),
     );
     const { outputFiles, errors, warnings } = await build(options);
+    if ((outputFiles?.length ?? 0) > 1)
+      throw new Error(
+        `Unexpected Bundler Error: Expected 1 output file, but got ${outputFiles.length}. Please report this issue.`,
+      );
     return {
       code: outputFiles?.[0]?.text ?? "",
       files: Array.from(new Set(files)),
@@ -122,13 +129,13 @@ export class Bundler {
   }
 
   /**
-   * @param {string} filename
+   * @param {string} target
    * @param {BundlerRunOptions} [options]
    * @returns {Promise<any>}
    */
-  async import(filename, options = {}) {
+  async import(target, options = {}) {
     options.write = false;
-    const { code, errors, warning } = await this.run(filename, options);
+    const { code, errors, warning } = await this.run(target, options);
     if (code === "") return { errors, warning };
     return await import(`data:text/javascript;base64,${Buffer.from(code).toString(`base64`)}`);
   }
@@ -138,9 +145,9 @@ export class Bundler {
  * @param {SetupOptions} options
  */
 function setup({
+  entries,
   files: bundlerFiles,
   resources: bundlerResources,
-  filename,
   loader,
   paths = {},
   exports,
@@ -149,21 +156,26 @@ function setup({
   importAttributes: bundlerImportAttributes = {},
 }) {
   const filter = /.*/;
-  const basename = fs.basename(filename);
-  const dirname = fs.dirname(filename);
   return {
     name: "vistta",
     setup: (build) => (
       build.onResolve({ filter }, async ({ path, importer, resolveDir }) => {
         const cleanPath = stripBundler(path);
-        if (cleanPath === "@exports") return { path: basename, namespace: "exports", sideEffects };
+        if (cleanPath === "@exports") return { path: "@exports", namespace: "exports", sideEffects };
+        if (cleanPath === "@bundle")
+          return {
+            path: "@bundle",
+            namespace: "bundle",
+            sideEffects,
+          };
         if (paths[cleanPath]) return Object.assign({ sideEffects }, paths[cleanPath]);
-        if (!fs.isAbsolute(importer)) importer = fs.resolve(resolveDir, importer);
+        const isVirtualPath = importer === "@exports" || importer === "@bundle";
+        if (!isVirtualPath && !fs.isAbsolute(importer)) importer = fs.resolve(resolveDir, importer);
         const { final, builtin, file } = await loader.resolve(
           cleanPath,
           {
             conditions: ["bundler"],
-            parentURL: pathToFileURL(importer).href,
+            parentURL: !isVirtualPath ? pathToFileURL(importer).href : undefined,
           },
           (final, { builtin, file }) => ({ final, builtin, file }),
         );
@@ -179,11 +191,17 @@ function setup({
         if (namespace === "ignore") return { contents: "" };
         if (namespace === "window") return { contents: `module.exports = window.${cleanPath};` };
         if (namespace === "global") return { contents: `module.exports = global.${cleanPath};` };
-        if (namespace === "exports")
+        if (namespace === "exports") {
+          if (exports === "*") return { contents: `export * from ${JSON.stringify(entries[0])};` };
           return {
-            contents: `export { ${exports} } from "./${basename}";`,
-            resolveDir: dirname,
+            contents: `export { ${exports} } from ${JSON.stringify(entries[0])};`,
           };
+        }
+        if (namespace === "bundle") {
+          let contents = "";
+          for (let i = 0, len = entries.length; i < len; i++) contents += `export * from ${JSON.stringify(entries[i])};\n`;
+          return { contents };
+        }
         if (importAttributes.type === "bundler") delete importAttributes.type;
         importAttributes.bundler = true;
         const mergedImportAttributes = { ...bundlerImportAttributes, ...importAttributes };
