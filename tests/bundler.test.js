@@ -68,6 +68,38 @@ suite("Bundler", () => {
     expect(code).toInclude("Page");
   });
 
+  test("run() exposes window namespace defaults and named exports", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "vistta-bundler-"));
+    const entry = join(dir, "entry.js");
+    writeFileSync(
+      entry,
+      'import Files, { Files as NamedFiles } from "@vistta/connect/files";\nimport { equals } from "@vistta/connect/utils";\nexport const getFile = () => Files.get();\nexport const getNamedFile = () => NamedFiles.get();\nexport const compare = (left, right) => equals(left, right);\n',
+    );
+
+    const runtime = new Runtime({ loaders: [], resolvers: ["js"], options: {} });
+    const bundler = new Bundler(runtime);
+    const { code, errors } = await bundler.run(entry, {
+      write: false,
+      logLevel: "silent",
+      format: "cjs",
+      paths: {
+        "@vistta/connect/files": { path: "files", namespace: "window" },
+        "@vistta/connect/utils": { path: "utils", namespace: "window" },
+      },
+    });
+    expect((errors || []).length).toEqual(0);
+
+    const browser = /** @type {any} */ (globalThis);
+    browser.window = {};
+    const module = { exports: {} };
+    new Function("window", "module", "exports", code)(browser.window, module, module.exports);
+    browser.window.files = { default: { get: () => "file" }, Files: { get: () => "named" } };
+    browser.window.utils = { equals: (left, right) => left === right };
+    expect(module.exports.getFile()).toEqual("file");
+    expect(module.exports.getNamedFile()).toEqual("named");
+    expect(module.exports.compare("utils", "utils")).toEqual(true);
+  });
+
   test("run() throws when source has syntax errors", async () => {
     const dir = mkdtempSync(join(tmpdir(), "vistta-bundler-"));
     const entry = join(dir, "entry.js");

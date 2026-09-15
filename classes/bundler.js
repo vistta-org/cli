@@ -162,13 +162,18 @@ function setup({
       build.onResolve({ filter }, async ({ path, importer, resolveDir }) => {
         const cleanPath = stripBundler(path);
         if (cleanPath === "@exports") return { path: "@exports", namespace: "exports", sideEffects };
-        if (cleanPath === "@bundle")
+        if (cleanPath === "@bundle") return { path: "@bundle", namespace: "bundle", sideEffects };
+        if (paths[cleanPath]) {
+          const mapping = paths[cleanPath];
+          if (mapping.namespace !== "window") return Object.assign({ sideEffects }, mapping);
+          const names = await getImportNames(importer, cleanPath);
           return {
-            path: "@bundle",
-            namespace: "bundle",
+            path: `${cleanPath}?window-import=${encodeURIComponent(importer)}`,
+            namespace: "window",
+            pluginData: { name: mapping.path, names },
             sideEffects,
           };
-        if (paths[cleanPath]) return Object.assign({ sideEffects }, paths[cleanPath]);
+        }
         const isVirtualPath = importer === "@exports" || importer === "@bundle";
         if (!isVirtualPath && !fs.isAbsolute(importer)) importer = fs.resolve(resolveDir, importer);
         const { final, builtin, file } = await loader.resolve(
@@ -186,16 +191,14 @@ function setup({
         if (platform === "node") return { external: true };
         return { path: finalPath, namespace: "ignore" };
       }),
-      build.onLoad({ filter }, async ({ path, namespace, with: importAttributes }) => {
+      build.onLoad({ filter }, async ({ path, namespace, pluginData, with: importAttributes }) => {
         const cleanPath = stripBundler(path);
         if (namespace === "ignore") return { contents: "" };
-        if (namespace === "window") return { contents: `module.exports = window.${cleanPath};` };
+        if (namespace === "window") return { contents: createWindowModule(pluginData.name, pluginData.names) };
         if (namespace === "global") return { contents: `module.exports = global.${cleanPath};` };
         if (namespace === "exports") {
           if (exports === "*") return { contents: `export * from ${JSON.stringify(entries[0])};` };
-          return {
-            contents: `export { ${exports} } from ${JSON.stringify(entries[0])};`,
-          };
+          return { contents: `export { ${exports} } from ${JSON.stringify(entries[0])};` };
         }
         if (namespace === "bundle") {
           let contents = "";
@@ -221,4 +224,29 @@ function setup({
       })
     ),
   };
+}
+
+async function getImportNames(importer, path) {
+  if (!importer || !fs.existsSync(importer)) return [];
+  const source = String(await fs.readFile(importer, "utf8"));
+  const escapedPath = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `(?:import\\s+(?:[\\w$]+\\s*,\\s*)?|export\\s*){([^}]+)}\\s*from\\s*["']${escapedPath}["']`,
+    "g",
+  );
+  const names = new Set();
+  for (const match of source.matchAll(pattern)) {
+    for (const specifier of match[1].split(",")) names.add(specifier.trim().split(/\s+as\s+/i)[0]);
+  }
+  return [...names].filter(Boolean);
+}
+
+function createWindowModule(name, names) {
+  const getNamespace = `() => window[${JSON.stringify(name)}]`;
+  let contents = `const getNamespace = ${getNamespace};\nconst exports = {};\nObject.defineProperty(exports, "__esModule", { value: true });\n`;
+  contents += `Object.defineProperty(exports, "default", { enumerable: true, get: () => { const namespace = getNamespace(); return namespace?.default ?? namespace; } });\n`;
+  for (const exportName of names)
+    contents += `Object.defineProperty(exports, ${JSON.stringify(exportName)}, { enumerable: true, get: () => getNamespace()?.[${JSON.stringify(exportName)}] });\n`;
+  contents += `module.exports = new Proxy(exports, { get: (exports, name) => Reflect.has(exports, name) ? Reflect.get(exports, name) : (getNamespace()?.default ?? getNamespace())?.[name] });\n`;
+  return contents;
 }
