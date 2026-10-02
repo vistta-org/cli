@@ -45,6 +45,8 @@ npm install @vistta/cli
 - `vistta test [pattern]`  
   Run tests matching the specified pattern.
 
+For browser-based test harnesses, import `TestRunner` from `@vistta/cli/test-runner` to avoid bundling Node-only CLI modules.
+
 ## Extending the CLI
 
 You can create custom loaders and commands to fit your workflow.

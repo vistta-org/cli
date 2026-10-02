@@ -11,6 +11,7 @@
     "./bundle": "./commands/bundle.js",
     "./project": "./commands/project.js",
     "./test": "./commands/test.js",
+    "./test-runner": "./classes/test-runner.js",
     "./loaders/bundler": "./loaders/bundler.js",
     "./loaders/file": "./loaders/file.js",
     "./loaders/json": "./loaders/json.js",

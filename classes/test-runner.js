@@ -205,7 +205,6 @@ export class TestRunner {
   }
 }
 
-// @ts-ignore
-function performance(time = process.hrtime()) {
-  return time[0] * 1000 + time[1] / 1e6;
+function performance() {
+  return globalThis.performance.now();
 }

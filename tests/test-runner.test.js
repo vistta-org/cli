@@ -1,7 +1,5 @@
 import { TestRunner } from "../classes/test-runner.js";
 
-if (typeof performance !== "function") globalThis.performance = () => Date.now();
-
 suite("TestRunner", () => {
   test("suite().test() registers a passing test", async () => {
     const runner = new TestRunner();
