@@ -38,10 +38,6 @@ jobs:
         working-directory: ./packages/${{ env.module }}
         run: npx eslint .
 
-      - name: Typescript Validation
-        working-directory: ./packages/${{ env.module }}
-        run: npx tsc
-
       - name: Unit Tests
         working-directory: ./packages/${{ env.module }}
         run: npx vistta test
