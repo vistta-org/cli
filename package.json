@@ -35,6 +35,6 @@
     "semver": "^7.8.5"
   },
   "author": "Tiago Terenas Almeida",
-  "license": "Apache 2.0 with Commons Clause",
+  "license": "GPL-3.0-only",
   "description": "Vistta CLI is a framework for extending the Node.js loader API and building reusable, customizable commands tools"
 }
