@@ -31,7 +31,7 @@
     "@vistta/console": "latest",
     "@vistta/fs": "latest",
     "@vistta/utils": "latest",
-    "esbuild": "^0.28.1",
+    "esbuild": "^0.28.2",
     "semver": "^7.8.5"
   },
   "author": "Tiago Terenas Almeida",
