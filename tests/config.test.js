@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadProjectConfig } from "../config.js";
-import { planTasks, runChecks, runTasks, toolFiles } from "../tools.js";
+import { planTasks, projectTool, runChecks, runTasks, toolFiles } from "../tools.js";
 
 function fixture(files) {
   const cwd = mkdtempSync(join(tmpdir(), "vistta-config-"));
@@ -129,6 +130,51 @@ suite("CLI configuration", async () => {
 });
 
 suite("CLI tool adapters", async () => {
+  await test("uses bundled tools when the project does not install them", async () => {
+    const cwd = fixture({
+      "package.json": { name: "fixture", type: "module" },
+      "tsconfig.json": {
+        include: ["src/*.js"],
+        compilerOptions: { allowJs: true, checkJs: true, noEmit: true, types: [], target: "ES2022" },
+        cli: { lint: { rules: { "no-unused-vars": "error" } } },
+      },
+      "src/main.js": "export const value = 1;\n",
+    });
+    try {
+      for (const name of ["eslint", "prettier", "typescript"]) {
+        const bundled = await import(pathToFileURL(createRequire(import.meta.url).resolve(name)).href);
+        assert.equal(await projectTool(name, cwd), bundled.default || bundled);
+      }
+      assert.equal(await runChecks(["format", "lint", "types"], loadProjectConfig(cwd), { cwd }), 0);
+      const check = spawnSync(process.execPath, [fileURLToPath(new URL("../bin.js", import.meta.url)), "check"], {
+        cwd,
+        encoding: "utf8",
+      });
+      assert.equal(check.status, 0, check.stdout + check.stderr);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  await test("prefers project tools and does not hide broken project installations", async () => {
+    const cwd = fixture({
+      "node_modules/prettier/package.json": { main: "index.cjs" },
+      "node_modules/prettier/index.cjs": 'module.exports = { version: "project-prettier" };',
+      "node_modules/eslint/package.json": { main: "index.cjs" },
+      "node_modules/eslint/index.cjs": 'throw new Error("Broken project ESLint");',
+      "node_modules/typescript/package.json": { exports: { "./internal": "./index.cjs" } },
+      "broken/node_modules/prettier/package.json": { main: "missing.cjs" },
+    });
+    try {
+      assert.equal((await projectTool("prettier", cwd)).version, "project-prettier");
+      await assert.rejects(projectTool("eslint", cwd), /Broken project ESLint/);
+      await assert.rejects(projectTool("typescript", cwd), { code: "ERR_PACKAGE_PATH_NOT_EXPORTED" });
+      await assert.rejects(projectTool("prettier", join(cwd, "broken")), { code: "MODULE_NOT_FOUND" });
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   await test("formats and lints temporary files with project-local tools and checks types without emitting", async () => {
     const root = resolve(import.meta.dirname, "../../..");
     const cwd = fixture({

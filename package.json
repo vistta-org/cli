@@ -35,8 +35,11 @@
     "@vistta/fs": "^1.1.0",
     "@vistta/utils": "^1.1.0",
     "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
     "jsonc-parser": "^3.3.1",
-    "semver": "^7.8.5"
+    "prettier": "^3.9.9",
+    "semver": "^7.8.5",
+    "typescript": "^6.0.3"
   },
   "author": "Tiago Terenas Almeida",
   "license": "GPL-3.0-only",

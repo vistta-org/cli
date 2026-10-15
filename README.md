@@ -34,12 +34,12 @@ npm install @vistta/cli
   type checking still covers the whole configured project.
 
 - `vistta lint [patterns] [--fix]`
-  Runs project-local ESLint against the configured files or supplied patterns.
+  Runs ESLint against the configured files or supplied patterns.
   `--fix` applies available fixes. Errors and warnings produce a nonzero exit
   status.
 
 - `vistta fmt [patterns] [--check|--write]`
-  Checks formatting with project-local Prettier without changing files by
+  Checks formatting with Prettier without changing files by
   default. `--check` makes that mode explicit; `--write` formats files in place.
   `--fix` is also accepted as a write alias. Check and write modes cannot be
   combined.
@@ -116,7 +116,9 @@ Comments and trailing commas are supported. If both files exist, `tsconfig.json`
 takes precedence. The existing `cliOptions` block remains supported; `cli` wins
 when both specify the same setting.
 
-Install the tools you want to use locally:
+ESLint, Prettier, and TypeScript are included with the CLI; no separate tool
+installation is required. To use project-specific versions, optionally install
+them locally:
 
 ```sh
 npm install --save-dev eslint prettier typescript
@@ -172,8 +174,11 @@ vistta run validate
   exit code. Lint warnings also fail the check.
 - Checks are read-only unless `--fix` or `fmt --write` is supplied. Fix mode
   applies Prettier formatting and ESLint fixes; type checking never emits files.
-- Tools are resolved from the current project, not downloaded automatically.
-  Only enabled tools need to be installed. ESLint 9+ and Prettier 3 are supported.
+- Tools are resolved from the current project first, falling back to the
+  CLI-bundled versions when absent. Commands never download tools at runtime.
+  Broken project installations report their errors instead of silently falling
+  back. ESLint 9+ and Prettier 3 are supported. Plugins and custom parsers must
+  still be installed in the project.
 - `format.include` and `lint.include` override top-level `include`. Explicit
   command-line patterns override both and are relative to the working directory.
   The corresponding `exclude` settings, `compilerOptions.outDir`, dependencies,

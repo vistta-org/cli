@@ -9,8 +9,18 @@ export async function projectTool(name, cwd) {
   let entry;
   try {
     entry = require.resolve(name);
-  } catch {
-    throw new Error(`Missing project tool "${name}". Install it locally: npm install --save-dev ${name}`);
+  } catch (error) {
+    if (
+      error.code !== "MODULE_NOT_FOUND" ||
+      require.resolve.paths(name)?.some((path) => existsSync(resolve(path, name, "package.json")))
+    )
+      throw error;
+    try {
+      entry = createRequire(import.meta.url).resolve(name);
+    } catch (error) {
+      if (error.code !== "MODULE_NOT_FOUND") throw error;
+      throw new Error(`Missing tool "${name}". Reinstall @vistta/cli or install it locally: npm install --save-dev ${name}`);
+    }
   }
   const module = await import(pathToFileURL(entry).href);
   return module.default || module;
