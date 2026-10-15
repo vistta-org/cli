@@ -45,9 +45,9 @@ export default class extends DefaultCommand {
       }
       entry = (await entries.next())?.value;
     }
-    if (!process.env.NODE_DEBUG) console.enable();
     let output = "";
     const results = await this.#testRunner.run();
+    if (!process.env.NODE_DEBUG) console.enable();
     for (let i = 0, len = results.length; i < len; i++) {
       const { name, tests } = results[i];
       let passing = 0;

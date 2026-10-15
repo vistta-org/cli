@@ -78,7 +78,7 @@ suite("CLI configuration", async () => {
 
   await test("resolves inherited file patterns relative to their config and excludes dependencies", () => {
     const cwd = fixture({
-      "preset/base.json": { include: ["src/**/*.js"], exclude: ["src/ignored"] },
+      "preset/base.json": { include: ["src/**/*.js"], exclude: ["src/ignored/**"] },
       "tsconfig.json": { extends: "./preset/base.json" },
       "preset/src/main.js": "export {};",
       "preset/src/ignored/skip.js": "export {};",
@@ -86,6 +86,7 @@ suite("CLI configuration", async () => {
     });
     try {
       assert.deepEqual(toolFiles(loadProjectConfig(cwd), "lint", [], cwd), [join(cwd, "preset/src/main.js")]);
+      assert.deepEqual(toolFiles(loadProjectConfig(cwd), "lint", ["preset/src/ignored/*.js"], cwd), []);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

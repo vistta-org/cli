@@ -34,27 +34,24 @@ export function toolFiles(project, name, patterns = [], cwd = process.cwd()) {
     const source = project.sources["compilerOptions.outDir"] || project.file;
     excluded.push(resolve(source ? dirname(source) : cwd, output).replaceAll("\\", "/") + "/**");
   }
+  const isExcluded = (entry) => {
+    const path = resolve(base, entry).replaceAll("\\", "/");
+    return (
+      path.split("/").some((part) => part === "node_modules" || part === ".git") ||
+      excluded.some((pattern) => matchesGlob(path, pattern))
+    );
+  };
   const files = globSync(
     include.map((pattern) => resolve(base, pattern).replaceAll("\\", "/")),
     {
       cwd: base,
-      exclude: (entry) => {
-        const path = resolve(base, entry).replaceAll("\\", "/");
-        return (
-          path.split("/").some((part) => part === "node_modules" || part === ".git") ||
-          excluded.some((pattern) => matchesGlob(path, pattern))
-        );
-      },
+      exclude: isExcluded,
     },
   );
   if (!explicit && !section.include) {
     for (const file of project.config.files || []) files.push(resolve(dirname(project.sources.files || project.file), file));
   }
-  return [...new Set(files)]
-    .filter(
-      (file) => !file.split(/[\\/]/).some((part) => part === "node_modules" || part === ".git") && statSync(file).isFile(),
-    )
-    .sort();
+  return [...new Set(files)].filter((file) => !isExcluded(file) && statSync(file).isFile()).sort();
 }
 
 async function lint(project, patterns, fix, cwd) {
