@@ -27,6 +27,40 @@ npm install @vistta/cli
 - `vistta bundle <filename> [outdir]`  
   Bundle an entry file and its dependencies.
 
+- `vistta check [patterns] [--fix]`
+  Runs the enabled formatting, lint, and type checks. Read-only by default;
+  `--fix` applies formatting and lint fixes. Any failed stage, including lint
+  warnings, produces a nonzero exit status. Patterns limit formatting and lint;
+  type checking still covers the whole configured project.
+
+- `vistta lint [patterns] [--fix]`
+  Runs project-local ESLint against the configured files or supplied patterns.
+  `--fix` applies available fixes. Errors and warnings produce a nonzero exit
+  status.
+
+- `vistta fmt [patterns] [--check|--write]`
+  Checks formatting with project-local Prettier without changing files by
+  default. `--check` makes that mode explicit; `--write` formats files in place.
+  `--fix` is also accepted as a write alias. Check and write modes cannot be
+  combined.
+
+- `vistta types`
+  Checks the complete TypeScript or JavaScript project using its configuration.
+  Never emits files and does not accept file patterns.
+
+- `vistta config [--sources]`
+  Prints the merged project configuration, including built-in tool defaults.
+  `--sources` also shows the selected config file and the origin of each setting.
+
+- `vistta task <name> [-- args]`
+  Runs a configured task, package script, or registered command with its task
+  dependencies. Stops on the first failure and forwards arguments after `--`
+  only to the requested task's executable command or script.
+
+- `vistta run <name> [-- args]`
+  Alias for `vistta task` in the base CLI. Frameworks can override it:
+  `@vistta/js` uses `run` to launch applications, so use `vistta task` there.
+
 - `vistta project name`
   Outputs the current project name from `package.json`.
 
@@ -68,8 +102,10 @@ vistta project update react --compatible
 vistta project update react --dry-run
 ```
 
-- `vistta test [pattern]`  
-  Run tests matching the specified pattern.
+- `vistta test [...patterns] [--filter=pattern] [--only]`
+  Runs matching test files with the base CLI's Node runner. `--filter` selects
+  test names using a case-insensitive regular expression; `--only` selects tests
+  or suites marked as exclusive. Frameworks can provide a different test runner.
 
 For browser-based test harnesses, import `TestRunner` from `@vistta/cli/test-runner` to avoid bundling Node-only CLI modules.
 
