@@ -34,7 +34,10 @@ npm install @vistta/cli
   Outputs the current project version. If a level (`major`, `minor`, `patch`) is provided, it increments the version accordingly.
 
 - `vistta project outdated`  
-  Lists all outdated dependencies in the project.
+  Lists outdated dependencies and dev dependencies using `npm outdated`,
+  respecting npm registry settings and policies such as `min-release-age`.
+  Linked workspace packages are excluded. Compatible updates are warnings;
+  newer versions outside the declared range are informational.
 
 - `vistta patch [module-name]` or `vistta project patch [module-name]`
   Updates the version of a specific module (or all outdated modules if none is specified) to the latest patch version in `package.json`.

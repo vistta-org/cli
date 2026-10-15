@@ -2,9 +2,9 @@ import fs from "@vistta/fs";
 import { assign, async, extract, remove } from "@vistta/utils";
 import { spawn } from "node:child_process";
 import { platform } from "node:os";
-import { isAbsolute } from "node:path";
+import { isAbsolute, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { inc, satisfies, valid } from "semver";
+import { inc, valid } from "semver";
 
 export const CWD = process.cwd();
 export const FALLBACK = "*";
@@ -76,67 +76,59 @@ export async function importConfig(options = {}) {
 }
 
 export async function getOutdatedPackages(dirname) {
-  const packages = (await getProjectLock(dirname))?.packages || {};
-  const data = {};
-  const promises = [];
-  async function processPackage(filepath, workspace) {
-    if (!fs.existsSync(filepath)) {
-      if (workspace) return;
-      else throw new Error("No Package found");
-    }
-    const { dependencies, devDependencies, workspaces } = await importJSON(filepath);
-    await fetchPackageUpdates(filepath, dependencies);
-    await fetchPackageUpdates(filepath, devDependencies, true);
-    if (!(workspaces?.length > 0)) return;
-    const workspaceDirnames = await resolveWorkspacesDirnames(workspaces);
-    for (let i = 0, len = workspaceDirnames.length; i < len; i++)
-      await processPackage(fs.resolve(workspaceDirnames[i], "package.json"), true);
-  }
-  async function fetchPackageUpdates(path, deps = {}, dev) {
-    const keys = Object.keys(deps);
-    for (let i = 0, len = keys.length; i < len; i++) {
-      const packageName = keys[i];
-      const { version, resolved, link } = packages["node_modules/" + packageName] || {};
-      if (link) continue;
-      if (!version) {
-        data[packageName] = {
-          package: path,
-          dev,
-        };
-        promises.push({ name: packageName });
-        continue;
+  const lock = await getProjectLock(dirname);
+  const packages = lock.packages || {};
+  if (!fs.existsSync(fs.resolve(dirname, "package.json"))) throw new Error("No Package found");
+  const output = await new Promise((resolve, reject) => {
+    const npmPath = process.env.npm_execpath;
+    const args = ["outdated", "--json", "--long", "--include=dev"];
+    const windowsShell = !npmPath && platform() === "win32";
+    const command = npmPath ? process.execPath : windowsShell ? process.env.ComSpec || "cmd.exe" : "npm";
+    const child = spawn(
+      command,
+      npmPath ? [npmPath, ...args] : windowsShell ? ["/d", "/s", "/c", "npm " + args.join(" ")] : args,
+      {
+        cwd: dirname,
+        windowsHide: true,
+      },
+    );
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (value) => {
+      stdout += value;
+    });
+    child.stderr.on("data", (value) => {
+      stderr += value;
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      try {
+        const data = JSON.parse(stdout || "{}");
+        if ((code !== 0 && code !== 1) || data.error)
+          reject(new Error(data.error?.summary || stderr || `npm outdated exited with code ${code}`));
+        else resolve(data);
+      } catch (error) {
+        reject(new Error(stderr || error.message));
       }
-      promises.push(
-        new Promise((resolve, reject) =>
-          fetch(resolved ? resolved.split("/-/")[0] + "/latest" : `https://registry.npmjs.org/${packageName}/latest`)
-            .then((response) => response.json())
-            .then(resolve)
-            .catch(reject),
-        ),
-      );
-      data[packageName] = {
-        package: path,
-        current: version,
-        wanted: deps[packageName],
-        dev,
-      };
-    }
-  }
+    });
+  });
   const result = [];
-  await processPackage(fs.resolve(dirname, "package.json"));
-  const values = await Promise.all(promises);
-  for (let i = 0, len = values.length; i < len; i++) {
-    const module = data[values[i]?.name];
-    module.name = values[i]?.name;
-    module.latest = values[i]?.version;
-    if (!module.current) {
-      result.push(module);
-      continue;
+  for (const [name, entries] of Object.entries(output)) {
+    for (const entry of Array.isArray(entries) ? entries : [entries]) {
+      const location = entry.location
+        ? relative(lock.dirname, entry.location).replaceAll("\\", "/")
+        : "node_modules/" + name;
+      if (packages[location]?.link || packages["node_modules/" + name]?.link) continue;
+      if (entry.type !== "dependencies" && entry.type !== "devDependencies") continue;
+      result.push({
+        name,
+        package: fs.resolve(lock.dirname, entry.dependedByLocation || "", "package.json"),
+        current: entry.current,
+        wanted: entry.wanted,
+        latest: entry.latest,
+        dev: entry.type === "devDependencies",
+      });
     }
-    if (!module || !module?.latest || !module?.wanted) throw new Error(`Internal Error`);
-    if (module.current === module.latest) continue;
-    module.wanted = satisfies(module.latest, module.wanted) ? module.latest : module.current;
-    result.push(module);
   }
   return result;
 }
@@ -232,27 +224,11 @@ export function markAttributes(attrs) {
 export { assign, async, extract, remove };
 
 async function getProjectLock(path) {
-  if (fs.existsSync(path + "/package-lock.json")) return await importJSON(fs.resolve(path, "package-lock.json"));
+  if (fs.existsSync(path + "/package-lock.json"))
+    return { ...(await importJSON(fs.resolve(path, "package-lock.json"))), dirname: path };
   const newPath = fs.resolve(path, "..");
   if (newPath === path) throw new Error("No Package Lock found.");
   return await getProjectLock(newPath);
-}
-
-async function resolveWorkspacesDirnames(workspaces) {
-  const paths = [];
-  for (let i = 0, len = workspaces.length; i < len; i++) {
-    if (!workspaces[i].includes("*")) {
-      paths.push(workspaces[i]);
-      continue;
-    }
-    const entries = fs.glob(workspaces[i]);
-    let entry = (await entries.next())?.value;
-    while (entry) {
-      paths.push(entry);
-      entry = (await entries.next())?.value;
-    }
-  }
-  return paths;
 }
 
 function evaluate(value) {
