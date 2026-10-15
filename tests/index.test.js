@@ -138,4 +138,41 @@ suite("CLI outdated", async () => {
   await test("surfaces npm errors instead of reporting everything up to date", async () => {
     await assert.rejects(checkNpmReport({ error: { summary: "Registry unavailable" } }, 1), /Registry unavailable/);
   });
+
+  await test("limits package checks to their own dependency consumers", async () => {
+    const { dirname, modules } = await checkNpmReport(
+      {
+        root: { current: "1.0.0", wanted: "1.1.0", latest: "1.1.0", type: "dependencies" },
+        shared: [
+          {
+            current: "1.0.0",
+            wanted: "1.1.0",
+            latest: "1.1.0",
+            type: "devDependencies",
+            dependedByLocation: "packages/child",
+          },
+          {
+            current: "1.0.0",
+            wanted: "1.2.0",
+            latest: "1.2.0",
+            type: "dependencies",
+            dependedByLocation: "packages/sibling",
+          },
+        ],
+      },
+      1,
+      {},
+      "packages/child",
+    );
+    assert.deepEqual(modules, [
+      {
+        name: "shared",
+        package: join(dirname, "packages/child/package.json"),
+        current: "1.0.0",
+        wanted: "1.1.0",
+        latest: "1.1.0",
+        dev: true,
+      },
+    ]);
+  });
 });

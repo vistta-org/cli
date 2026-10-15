@@ -2,9 +2,10 @@ import fs from "@vistta/fs";
 import { assign, async, extract, remove } from "@vistta/utils";
 import { spawn } from "node:child_process";
 import { platform } from "node:os";
-import { isAbsolute, relative } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { relative } from "node:path";
+import { pathToFileURL } from "node:url";
 import { inc, valid } from "semver";
+import { loadProjectConfig, mergeConfig } from "./config.js";
 
 export const CWD = process.cwd();
 export const FALLBACK = "*";
@@ -48,31 +49,12 @@ export async function importEnv(filepath) {
 }
 
 export async function importConfig(options = {}) {
-  try {
-    const helper = async (file) => {
-      const {
-        extends: parent,
-        cliOptions: cli = {},
-        compilerOptions: compiler = {},
-        bundlerOptions: bundler = {},
-      } = await importJSON(file);
-      if (cli.commands) {
-        const commands = Object.keys(cli.commands);
-        const dirname = fs.dirname(file);
-        for (let i = 0, len = commands.length; i < len; i++)
-          cli.commands[commands[i]] = resolve(dirname, cli.commands[commands[i]]);
-      }
-      if (parent) return assign(await helper(ensurePath(parent)), { cli, compiler, bundler });
-      return { cli, compiler, bundler };
-    };
-    let file = fs.resolve(process.cwd(), "tsconfig.json");
-    if (!fs.existsSync(file)) file = fs.resolve(process.cwd(), "jsconfig.json");
-    if (!fs.existsSync(file)) return options;
-    return assign(options, await helper(ensurePath(file)));
-  } catch (e) {
-    console.error(e.trace || e.message);
-    return options;
-  }
+  const { config } = loadProjectConfig();
+  return mergeConfig(options, {
+    cli: config.cli || {},
+    compiler: config.compilerOptions || {},
+    bundler: config.bundlerOptions || {},
+  });
 }
 
 export async function getOutdatedPackages(dirname) {
@@ -120,9 +102,11 @@ export async function getOutdatedPackages(dirname) {
         : "node_modules/" + name;
       if (packages[location]?.link || packages["node_modules/" + name]?.link) continue;
       if (entry.type !== "dependencies" && entry.type !== "devDependencies") continue;
+      const packagePath = fs.resolve(lock.dirname, entry.dependedByLocation || "", "package.json");
+      if (relative(lock.dirname, dirname) && relative(dirname, packagePath) !== "package.json") continue;
       result.push({
         name,
-        package: fs.resolve(lock.dirname, entry.dependedByLocation || "", "package.json"),
+        package: packagePath,
         current: entry.current,
         wanted: entry.wanted,
         latest: entry.latest,
@@ -235,15 +219,4 @@ function evaluate(value) {
   if (value == null || value === "true") return true;
   if (value === "false") return false;
   return value;
-}
-
-function ensurePath(value) {
-  try {
-    if (isAbsolute(value)) return value;
-    value = import.meta.resolve(value);
-    if (isAbsolute(value)) return value;
-    return fileURLToPath(value);
-  } catch {
-    return value;
-  }
 }

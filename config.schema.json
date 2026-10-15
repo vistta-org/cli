@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VISTTA project configuration",
+  "description": "VISTTA settings in tsconfig.json or jsconfig.json. Other TypeScript and framework properties are preserved.",
+  "type": "object",
+  "properties": {
+    "extends": {
+      "description": "Relative or package presets, applied from left to right before local settings.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/definitions/stringList"
+        }
+      ]
+    },
+    "compilerOptions": {
+      "type": "object",
+      "description": "Compiler options used unchanged by TypeScript, with noEmit enabled for checks."
+    },
+    "include": {
+      "$ref": "#/definitions/stringList"
+    },
+    "exclude": {
+      "$ref": "#/definitions/stringList"
+    },
+    "files": {
+      "$ref": "#/definitions/stringList"
+    },
+    "cli": {
+      "$ref": "#/definitions/cli"
+    },
+    "cliOptions": {
+      "$ref": "#/definitions/cli",
+      "description": "Legacy alias. The cli block takes precedence."
+    },
+    "bundlerOptions": {
+      "type": "object"
+    }
+  },
+  "definitions": {
+    "stringList": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cli": {
+      "type": "object",
+      "properties": {
+        "commands": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "check": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "format": {
+              "type": "boolean",
+              "default": true
+            },
+            "lint": {
+              "type": "boolean",
+              "default": true
+            },
+            "types": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "format": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "engine": {
+              "const": "prettier",
+              "default": "prettier"
+            },
+            "options": {
+              "type": "object",
+              "description": "Prettier options overriding any discovered or referenced configuration."
+            },
+            "config": {
+              "type": "string",
+              "description": "Optional module exporting Prettier options as its default export."
+            },
+            "include": {
+              "$ref": "#/definitions/stringList"
+            },
+            "exclude": {
+              "$ref": "#/definitions/stringList"
+            }
+          }
+        },
+        "lint": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "engine": {
+              "const": "eslint",
+              "default": "eslint"
+            },
+            "rules": {
+              "type": "object",
+              "description": "ESLint rules applied after the existing or referenced flat config."
+            },
+            "languageOptions": {
+              "type": "object"
+            },
+            "options": {
+              "type": "object",
+              "description": "Additional JSON-compatible ESLint flat-config properties, such as settings or files."
+            },
+            "config": {
+              "type": "string",
+              "description": "Optional module exporting an ESLint flat config or array. Replaces config-file discovery."
+            },
+            "include": {
+              "$ref": "#/definitions/stringList"
+            },
+            "exclude": {
+              "$ref": "#/definitions/stringList"
+            }
+          }
+        },
+        "tasks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "dependsOn": {
+                "$ref": "#/definitions/stringList"
+              },
+              "script": {
+                "type": "string",
+                "description": "A script name from the current package.json. Dependencies run first."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -33,6 +33,13 @@ const config = await importConfig({
       bundle: resolve(import.meta.dirname, "./commands/bundle.js"),
       project: resolve(import.meta.dirname, "./commands/project.js"),
       test: resolve(import.meta.dirname, "./commands/test.js"),
+      check: resolve(import.meta.dirname, "./commands/quality.js"),
+      lint: resolve(import.meta.dirname, "./commands/quality.js"),
+      fmt: resolve(import.meta.dirname, "./commands/quality.js"),
+      types: resolve(import.meta.dirname, "./commands/quality.js"),
+      config: resolve(import.meta.dirname, "./commands/quality.js"),
+      run: resolve(import.meta.dirname, "./commands/task.js"),
+      task: resolve(import.meta.dirname, "./commands/task.js"),
     },
   },
 });

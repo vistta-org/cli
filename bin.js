@@ -22,6 +22,10 @@ const argv = [];
 const execArgv = ["--import", pathToFileURL(fs.resolve(dirname, "register.js")), "--experimental-sqlite", "--title=VISTTA"];
 for (let i = 2, len = process.argv.length; i < len; i++) {
   const [arg, value] = process.argv[i].toLowerCase().split("=");
+  if (process.argv[i] === "--") {
+    argv.push(...process.argv.slice(i));
+    break;
+  }
   const nodeOption = ENABLED_NODE_OPTIONS[arg];
   if (nodeOption) {
     if (typeof nodeOption === "string") env[nodeOption] = value || true;

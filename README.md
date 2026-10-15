@@ -30,25 +30,159 @@ npm install @vistta/cli
 - `vistta project name`
   Outputs the current project name from `package.json`.
 
-- `vistta project version [major|minor|patch]`  
-  Outputs the current project version. If a level (`major`, `minor`, `patch`) is provided, it increments the version accordingly.
+- `vistta project version [increment|version] [prerelease-id]`
+  Prints the current project version, increments it (for example, `patch` or
+  `prerelease`), or sets an explicit version such as `1.2.3`.
 
-- `vistta project outdated`  
-  Lists outdated dependencies and dev dependencies using `npm outdated`,
+- `vistta project outdated [dependency]`
+  Shows installed (`Current`), range-compatible (`Wanted`), and `Latest`
+  versions, plus the owning manifest and dependency type, using `npm outdated`,
   respecting npm registry settings and policies such as `min-release-age`.
-  Linked workspace packages are excluded. Compatible updates are warnings;
-  newer versions outside the declared range are informational.
+  Inside a workspace package, only that package's dependencies are checked;
+  running from the workspace root checks all workspace consumers.
+  Linked workspace packages are excluded. Available compatible updates cause a
+  nonzero exit status; newer versions outside the declared range are informational.
 
-- `vistta patch [module-name]` or `vistta project patch [module-name]`
-  Updates the version of a specific module (or all outdated modules if none is specified) to the latest patch version in `package.json`.
+- `vistta project update [dependency] [--compatible] [--dry-run]`
+  Updates declared dependency ranges to latest versions by default, which may
+  include major upgrades. `--compatible` selects npm's wanted version within
+  each dependency's existing range instead. `--dry-run` previews the exact
+  manifest changes without writing files.
 
-- `vistta update [module-name]` or `vistta project update [module-name]`
-  Updates the version of a specific module (or all outdated modules if none is specified) to its latest available version in `package.json`.
+- `vistta project patch [dependency] [--dry-run]`
+  Backward-compatible alias for `project update --compatible`. Despite the
+  historical name, this can select a compatible minor update, not just patches.
+
+Dependency updates only edit `package.json` ranges; run `npm install` afterward
+to update installed versions and the lockfile. Workspace-root updates preserve
+each consumer's own target version. If no ranges need changing, the command
+says so explicitly. A dependency filter selects matching outdated entries; no
+match means no outdated entry was found, not that the dependency exists.
+
+```sh
+vistta project --help
+vistta project update --help
+vistta project outdated react
+vistta project update --compatible --dry-run
+vistta project update react --compatible
+vistta project update react --dry-run
+```
 
 - `vistta test [pattern]`  
   Run tests matching the specified pattern.
 
 For browser-based test harnesses, import `TestRunner` from `@vistta/cli/test-runner` to avoid bundling Node-only CLI modules.
+
+### Unified Project Configuration
+
+Keep VISTTA settings in the `cli` block of `tsconfig.json` or `jsconfig.json`.
+Comments and trailing commas are supported. If both files exist, `tsconfig.json`
+takes precedence. The existing `cliOptions` block remains supported; `cli` wins
+when both specify the same setting.
+
+Install the tools you want to use locally:
+
+```sh
+npm install --save-dev eslint prettier typescript
+```
+
+```jsonc
+{
+  "$schema": "./node_modules/@vistta/cli/config.schema.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+  },
+  "include": ["src/**/*.js", "src/**/*.ts"],
+  "exclude": ["dist"],
+  "cli": {
+    "check": { "format": true, "lint": true, "types": true },
+    "format": {
+      "engine": "prettier",
+      "options": { "printWidth": 120, "semi": true },
+    },
+    "lint": {
+      "engine": "eslint",
+      "rules": { "no-unused-vars": "warn" },
+    },
+    "tasks": {
+      "validate": { "dependsOn": ["check", "test"] },
+      "release": { "dependsOn": ["validate"], "script": "publish:package" },
+    },
+  },
+}
+```
+
+The optional `$schema` enables completion and validation for VISTTA settings.
+The schema leaves other TypeScript and framework settings open; TypeScript
+validates compiler options during `vistta types` or `vistta check`.
+
+```sh
+vistta check
+vistta check --fix
+vistta lint "src/**/*.js" --fix
+vistta fmt --check
+vistta fmt --write
+vistta types
+vistta config
+vistta config --sources
+vistta task validate
+vistta run validate
+```
+
+- `check` runs formatting, linting, and type checking by default. Disable a stage
+  with `cli.check`. All enabled stages run, and any failure produces a nonzero
+  exit code. Lint warnings also fail the check.
+- Checks are read-only unless `--fix` or `fmt --write` is supplied. Fix mode
+  applies Prettier formatting and ESLint fixes; type checking never emits files.
+- Tools are resolved from the current project, not downloaded automatically.
+  Only enabled tools need to be installed. ESLint 9+ and Prettier 3 are supported.
+- `format.include` and `lint.include` override top-level `include`. Explicit
+  command-line patterns override both and are relative to the working directory.
+  The corresponding `exclude` settings, `compilerOptions.outDir`, dependencies,
+  and Git metadata are excluded. Inherited patterns are relative to their owning
+  configuration file. Type checking always covers the whole configured project.
+- Existing ESLint and Prettier configs are used when present. Inline settings
+  override them. Without an ESLint config, inline rules/options provide the flat
+  config. `lint.options` contains flat-config properties, not ESLint constructor
+  options. Without explicit includes, lint scans JS/TS and formatting scans files
+  supported by Prettier. An empty match set passes without changing files.
+- For plugins, parsers, or other executable settings, set `lint.config` or
+  `format.config` to a module path such as `"./tools/eslint.js"`. It must default
+  export the relevant tool configuration. Relative paths resolve from the owning
+  config file; package references resolve from that same directory. Referenced
+  lint configs replace ESLint config discovery; inline settings still win.
+
+### Presets And Tasks
+
+`extends` accepts a relative JSON/JSONC config, a package config export, or an
+array of either. Parents apply left to right, then local settings override them.
+Objects merge recursively; arrays and scalar values replace inherited values.
+Circular presets, malformed JSONC, and invalid VISTTA tool/task settings fail
+explicitly. `vistta config --sources` shows the merged configuration and the
+file responsible for each leaf setting, including built-in check defaults.
+
+Workspace packages can extend a shared root/preset config and override `cli`
+locally. Commands run in the current package directory; they do not automatically
+fan out across workspaces. Existing `compilerOptions`, `bundlerOptions`, and
+custom commands continue to work.
+
+Tasks run their `dependsOn` dependencies once, in order, before their optional
+package `script`. Dependencies can name other tasks, current-package scripts, or
+registered commands such as `check`, `lint`, `fmt`, `types`, `test`, and `bundle`
+(or `build` when provided by a framework).
+Missing tasks/scripts and dependency cycles fail before execution. The first
+failed command stops the plan and propagates its exit status. Arguments after
+`--` are forwarded only to the requested task's command or script:
+
+```sh
+vistta task release -- --dry-run
+```
+
+`vistta run` is a task alias in the base CLI. Framework command overrides are
+preserved: `@vistta/js` keeps its application-oriented `run`, so use `vistta task`
+there. Task caching and automatic cross-workspace scheduling are not implemented.
 
 ## Extending the CLI
 

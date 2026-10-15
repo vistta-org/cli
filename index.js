@@ -6,5 +6,8 @@ export { TestRunner } from "./classes/test-runner.js";
 export { default as BundleCommand } from "./commands/bundle.js";
 export { default as DefaultCommand } from "./commands/default.js";
 export { default as ProjectCommand } from "./commands/project.js";
+export { default as QualityCommand } from "./commands/quality.js";
+export { default as TaskCommand } from "./commands/task.js";
 export { default as TestCommand } from "./commands/test.js";
+export { loadProjectConfig } from "./config.js";
 export { parseArgs } from "./utils.js";
