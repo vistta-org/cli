@@ -9,7 +9,12 @@ export default class TypescriptLoader extends Loader {
     this.compilerOptions = options.compiler || {};
   }
 
-  async load(source) {
+  /**
+   * @param {string} source
+   * @param {{ path?: string, extension?: string, [key: string]: any }} options
+   */
+  // eslint-disable-next-line no-unused-vars
+  async load(source, options) {
     try {
       return await transform(source, {
         format: "esm",
