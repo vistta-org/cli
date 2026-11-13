@@ -31,7 +31,7 @@ npm install @vistta/cli
   Runs the enabled formatting, lint, and type checks. Read-only by default;
   `--fix` applies formatting and lint fixes. Any failed stage, including lint
   warnings, produces a nonzero exit status. Patterns limit formatting and lint;
-  type checking still covers the whole configured project.
+  type checking still covers each complete configured project.
 
 - `vistta lint [patterns] [--fix]`
   Runs ESLint against the configured files or supplied patterns.
@@ -45,7 +45,7 @@ npm install @vistta/cli
   combined.
 
 - `vistta types`
-  Checks the complete TypeScript or JavaScript project using its configuration.
+  Checks TypeScript or JavaScript projects using their respective configurations.
   Never emits files and does not accept file patterns.
 
 - `vistta config [--sources]`
@@ -174,6 +174,15 @@ vistta run validate
   exit code. Lint warnings also fail the check.
 - Checks are read-only unless `--fix` or `fmt --write` is supplied. Fix mode
   applies Prettier formatting and ESLint fixes; type checking never emits files.
+- Without a `tsconfig.json` or `jsconfig.json`, type checking uses the CLI's bundled
+  compiler defaults: JavaScript checking, ESNext target/modules, bundler module
+  resolution, JSX React mode, JSON imports, ES module interoperability, and
+  skipped declaration-library checks, without strict mode or file emission.
+  It scans JavaScript and TypeScript sources below the working directory,
+  excluding `node_modules`, `.git`, `dist`, `build`, and `coverage` directories.
+  Missing inputs and type errors fail the check rather than silently passing.
+  An existing config retains its compiler settings; defaults are not added to it.
+  To disable type checking in `check`, set `cli.check.types` to `false` in a config.
 - Tools are resolved from the current project first, falling back to the
   CLI-bundled versions when absent. Commands never download tools at runtime.
   Broken project installations report their errors instead of silently falling
@@ -183,12 +192,24 @@ vistta run validate
   command-line patterns override both and are relative to the working directory.
   The corresponding `exclude` settings, `compilerOptions.outDir`, dependencies,
   and Git metadata are excluded. Inherited patterns are relative to their owning
-  configuration file. Type checking always covers the whole configured project.
+  configuration file. Type checking always covers each complete configured project.
 - Existing ESLint and Prettier configs are used when present. Inline settings
-  override them. Without an ESLint config, inline rules/options provide the flat
-  config. `lint.options` contains flat-config properties, not ESLint constructor
+  override them. Neither file is required. Without an ESLint config, the CLI
+  supplies ESLint's recommended JavaScript rules and enables JSX parsing.
+  Component names used in JSX count as variable references; unused imports
+  and variables are still reported.
+  `lint.env` enables built-in ESLint environments, for example
+  `{ "browser": true, "node": true }`. `lint.languageOptions.parser` can name
+  an already installed parser module; its options belong in `parserOptions`.
+  `lint.options` contains flat-config properties, not ESLint constructor
   options. Without explicit includes, lint scans JS/TS and formatting scans files
   supported by Prettier. An empty match set passes without changing files.
+- Formatting preserves existing line endings by default (`endOfLine: "auto"`).
+  A final newline is optional; write mode preserves whether the file has one.
+  Extra trailing blank lines and other layout differences are still checked.
+  Set `cli.format.options.endOfLine` to enforce a particular convention.
+  Put other Prettier settings, including existing plugins, in
+  `cli.format.options`; no separate Prettier config is needed.
 - For plugins, parsers, or other executable settings, set `lint.config` or
   `format.config` to a module path such as `"./tools/eslint.js"`. It must default
   export the relevant tool configuration. Relative paths resolve from the owning
@@ -204,10 +225,36 @@ Circular presets, malformed JSONC, and invalid VISTTA tool/task settings fail
 explicitly. `vistta config --sources` shows the merged configuration and the
 file responsible for each leaf setting, including built-in check defaults.
 
-Workspace packages can extend a shared root/preset config and override `cli`
-locally. Commands run in the current package directory; they do not automatically
-fan out across workspaces. Existing `compilerOptions`, `bundlerOptions`, and
+Quality commands discover descendant `tsconfig.json` and `jsconfig.json` files,
+not just npm workspaces. Each file belongs to its nearest project config; folders
+without a config use their parent's config, stopping at the working directory.
+Each project uses its own includes, exclusions, compiler options, tool settings,
+and locally resolved tools. Parent checks do not also select child-project files.
+TypeScript may still load imported dependencies across project boundaries.
+Child exclusions replace inherited exclusions, even if they re-include generated
+files. Checks warn when a child selects files excluded by an ancestor, but still
+use the child's settings. Excluded directories, dependencies, Git metadata,
+and directory symlinks are not searched for projects.
+Explicit patterns remain relative to the invocation
+directory and only narrow formatting and linting, not type checking.
+
+Nested configs inherit missing settings from their nearest parent config.
+Their own settings, including explicitly extended presets, override that fallback.
+Inherited paths remain relative to the config that defines them. `check` honors
+each project's effective `cli.check` flags; explicit `lint`, `fmt`, and `types`
+commands run regardless of those flags. Config discovery never
+searches above the invocation directory, though explicit `extends` references
+can still resolve outside it. Existing `compilerOptions`, `bundlerOptions`, and
 custom commands continue to work.
+Type checks run in isolated workers so a compiler failure is reported without
+terminating checks for the remaining projects.
+If inherited includes select only files outside a project, type checking fails
+with a configuration error rather than reporting an empty program as passed.
+Set that project's `include` or `files` to select its own sources. Configs whose
+inputs are entirely delegated to descendant projects, and valid solution configs
+with `files: []` and project references, are reported as skipped and do not count
+as passed checks. Invalid empty configs still fail TypeScript's configuration
+validation.
 
 Tasks run their `dependsOn` dependencies once, in order, before their optional
 package `script`. Dependencies can name other tasks, current-package scripts, or

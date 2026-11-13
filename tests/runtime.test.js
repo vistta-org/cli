@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -28,13 +29,14 @@ suite("Runtime", () => {
     const runtime = new Runtime({ loaders: [], resolvers: [], options: {} });
     const here = new URL(".", import.meta.url).href;
     const parentURL = here + "runtime.test.js?__bundler__";
-    let captured;
+    const captured = [];
     await runtime.resolve("./runtime.test.js", { parentURL, importAttributes: { type: "bundler" } }, (url) => {
-      captured = url;
+      captured.push(url);
       return url;
     });
-    expect(captured.includes("?__bundler__?")).toEqual(false);
-    expect(/\?__bundler__$/.test(captured)).toEqual(true);
+    assert.equal(captured.length, 1, "The resolver must call the next hook once");
+    expect(captured[0].includes("?__bundler__?")).toEqual(false);
+    expect(/\?__bundler__$/.test(captured[0])).toEqual(true);
   });
 
   test("resolve detects bundler mode from importAttributes.type even without conditions", async () => {

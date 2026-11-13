@@ -77,6 +77,11 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "env": {
+              "type": "object",
+              "additionalProperties": { "type": "boolean" },
+              "description": "ESLint built-in environments, such as browser and node."
+            },
             "engine": {
               "const": "prettier",
               "default": "prettier"

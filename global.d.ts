@@ -1,4 +1,4 @@
-/// <reference path="@vistta/console" />
+/// <reference types="@vistta/console/global" />
 
 interface CliRuntimeData {
   loaders: any[];

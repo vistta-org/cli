@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { Loader } from "../classes/loader.js";
 
 suite("Loader", () => {
@@ -17,7 +18,6 @@ suite("Loader", () => {
     const loader = new Custom({ x: 1 });
     const result = loader.load("input", { type: "json" });
     expect(result.code).toEqual("ok");
-    expect(captured.source).toEqual("input");
-    expect(captured.properties.type).toEqual("json");
+    assert.deepEqual(captured, { source: "input", properties: { type: "json" } });
   });
 });

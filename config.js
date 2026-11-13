@@ -97,11 +97,13 @@ export function loadProjectConfig(directory = process.cwd()) {
     const expected = section === "lint" ? "eslint" : "prettier";
     if (engine !== undefined && engine !== expected) throw new Error(`cli.${section}.engine must be "${expected}"`);
     for (const name of ["include", "exclude"]) stringList(options[name], `cli.${section}.${name}`);
-    for (const name of section === "lint" ? ["rules", "languageOptions", "options"] : ["options"]) {
+    for (const name of section === "lint" ? ["rules", "languageOptions", "options", "env"] : ["options"]) {
       const value = options[name];
       if (value !== undefined && (!value || typeof value !== "object" || Array.isArray(value)))
         throw new Error(`cli.${section}.${name} must be an object in ${file}`);
     }
+    if (section === "lint" && Object.values(options.env || {}).some((value) => typeof value !== "boolean"))
+      throw new Error("cli.lint.env values must be booleans");
     for (const name of Object.keys(options)) {
       if (
         ![
@@ -110,7 +112,7 @@ export function loadProjectConfig(directory = process.cwd()) {
           "exclude",
           "options",
           "config",
-          ...(section === "lint" ? ["rules", "languageOptions"] : []),
+          ...(section === "lint" ? ["rules", "languageOptions", "env"] : []),
         ].includes(name)
       )
         throw new Error(`Unknown setting cli.${section}.${name} in ${file}`);

@@ -28,6 +28,7 @@ suite("Bundler", () => {
   test("constructor throws on invalid argument", () => {
     let caught;
     try {
+      // @ts-expect-error Exercise runtime validation of an invalid constructor argument.
       new Bundler(123);
     } catch (e) {
       caught = e;

@@ -27,7 +27,7 @@ export default class extends Command {
         cli: {
           check: { format: true, lint: true, types: true },
           lint: { engine: "eslint" },
-          format: { engine: "prettier" },
+          format: { engine: "prettier", options: { endOfLine: "auto" } },
         },
       };
       const config = mergeConfig(defaults, project.config);
@@ -37,16 +37,18 @@ export default class extends Command {
         "cli.check.types": "<default>",
         "cli.lint.engine": "<default>",
         "cli.format.engine": "<default>",
+        "cli.format.options.endOfLine": "<default>",
         ...project.sources,
       };
       console.print(JSON.stringify(options.sources ? { file: project.file, config, sources } : config, null, 2));
       return;
     }
-    const names =
-      command === "check"
-        ? ["format", "lint", "types"].filter((name) => project.config.cli?.check?.[name] !== false)
-        : [command === "fmt" ? "format" : command];
-    const code = await runChecks(names, project, { patterns, fix: options.fix === true || options.write === true });
+    const names = command === "check" ? ["format", "lint", "types"] : [command === "fmt" ? "format" : command];
+    const code = await runChecks(names, project, {
+      patterns,
+      fix: options.fix === true || options.write === true,
+      check: command === "check",
+    });
     process.exit(code);
   }
 }
