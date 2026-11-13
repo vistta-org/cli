@@ -440,6 +440,8 @@ suite("CLI tool adapters", async () => {
       "src/value.ts": "export const value: number = 1;\n",
       "src/module.mjs": "export const value = 1;\n",
       "src/common.cjs": "exports.value = 1;\n",
+      "src/runtime.js":
+        'import assert from "node:assert/strict";\nimport { basename } from "node:path";\nsuite("runtime", () => {\n  test("node and test globals", () => {\n    assert.equal(typeof process.execPath, "string");\n    expect(basename(import.meta.dirname)).toEqual("src");\n  });\n});\n',
       "node_modules/ignored/index.ts": "invalid typescript !!!",
       ".git/ignored.ts": "invalid typescript !!!",
       "dist/ignored.ts": "invalid typescript !!!",

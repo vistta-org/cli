@@ -31,6 +31,7 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
+    "@types/node": "^26.6.4",
     "@vistta/console": "^1.1.0",
     "@vistta/fs": "^1.1.0",
     "@vistta/utils": "^1.1.0",

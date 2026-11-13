@@ -233,6 +233,10 @@ export async function checkTypes(entry, directories) {
   const convertedDefaults = ts.convertCompilerOptionsFromJson(defaults, cwd, project.file);
   diagnostics.push(...convertedDefaults.errors);
   const options = convertedDefaults.options;
+  if (!project.file) {
+    options.types = ["node"];
+    options.typeRoots = [dirname(dirname(projectToolPath("@types/node/package.json", cwd)))];
+  }
   for (const [name, value] of Object.entries(project.config.compilerOptions || {})) {
     const key = `compilerOptions.${name}`;
     const source =
@@ -285,7 +289,8 @@ export async function checkTypes(entry, directories) {
       }
       warnReincluded(files, entry, "types");
       const program = ts.createProgram({
-        rootNames: files,
+        rootNames:
+          !project.file && files.length ? [...files, fileURLToPath(new URL("./global.d.ts", import.meta.url))] : files,
         options: parsed.options,
         projectReferences: parsed.projectReferences,
       });
