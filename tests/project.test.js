@@ -71,8 +71,11 @@ suite("Project command", () => {
       assert.match(result.stdout, /1\.5\.0/);
       assert.match(result.stdout, /packages[\\/]second[\\/]package\.json/);
       assert.match(result.stdout, /2 compatible update/);
+      assert.match(result.stdout, /Compatible updates cause a nonzero exit status; latest-only updates are informational\./);
       const informational = fixture.invoke("outdated", "latest");
       assert.equal(informational.status, 0);
+      assert.match(informational.stdout, /1\.0\.0\s+1\.0\.0\s+2\.0\.0/);
+      assert.match(informational.stdout, /0 compatible update\(s\).*1 latest-only update\(s\)/);
       assert.doesNotMatch(informational.stdout, /shared/);
       assert.match(fixture.invoke("outdated", "absent").stdout, /No outdated dependency/);
     } finally {

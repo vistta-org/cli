@@ -55,8 +55,11 @@ export default class extends Command {
         );
       case "outdated":
       case "patch":
-      case "update":
-        process.exit(await dependencies(command, values[0], options));
+      case "update": {
+        const code = await dependencies(command, values[0], options);
+        await console.flush();
+        process.exit(code);
+      }
     }
   }
 }
