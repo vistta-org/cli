@@ -49,6 +49,7 @@ export default class extends Command {
       fix: options.fix === true || options.write === true,
       check: command === "check",
     });
+    await console.flush();
     process.exit(code);
   }
 }

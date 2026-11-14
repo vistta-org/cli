@@ -558,6 +558,13 @@ suite("CLI tool adapters", async () => {
 });
 
 suite("CLI public commands", async () => {
+  await test("loads Node types when checking the CLI without workspace inheritance", () => {
+    const bin = fileURLToPath(new URL("../bin.js", import.meta.url));
+    const checked = spawnSync(process.execPath, [bin, "types"], { cwd: dirname(bin), encoding: "utf8" });
+    assert.equal(checked.status, 0, checked.stdout + checked.stderr);
+    assert.match(checked.stdout + checked.stderr, /Checks: 1\/1 passed/);
+  });
+
   await test("fails rather than passing when inherited inputs belong to another project", () => {
     const bin = fileURLToPath(new URL("../bin.js", import.meta.url));
     const cwd = fixture({
