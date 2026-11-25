@@ -23,7 +23,10 @@ suite("CLI configuration", async () => {
       "presets/base.json": {
         compilerOptions: { checkJs: true },
         include: ["src/**/*.js"],
-        cliOptions: { check: { format: false, lint: true }, commands: { custom: "./custom.js" } },
+        cliOptions: {
+          check: { format: false, lint: true },
+          commands: { custom: "./custom.js" },
+        },
         cli: { format: { options: { semi: false } } },
       },
       "presets/custom.js": "export default class {}",
@@ -32,9 +35,16 @@ suite("CLI configuration", async () => {
     });
     try {
       const result = loadProjectConfig(cwd);
-      assert.deepEqual(result.config.cli.check, { format: false, lint: true, types: false });
+      assert.deepEqual(result.config.cli.check, {
+        format: false,
+        lint: true,
+        types: false,
+      });
       assert.deepEqual(result.config.include, ["app/*.js"]);
-      assert.deepEqual(result.config.cli.format.options, { semi: false, singleQuote: true });
+      assert.deepEqual(result.config.cli.format.options, {
+        semi: false,
+        singleQuote: true,
+      });
       assert.equal(fileURLToPath(result.config.cli.commands.custom), join(cwd, "presets/custom.js"));
       assert.equal(result.sources["cli.format.options.semi"], join(cwd, "presets/base.json"));
       assert.equal(result.sources["cli.format.options.singleQuote"], join(cwd, "tsconfig.json"));
@@ -45,13 +55,21 @@ suite("CLI configuration", async () => {
 
   await test("supports package presets, jsconfig, and multiple ordered parents", () => {
     const cwd = fixture({
-      "node_modules/preset/package.json": { name: "preset", exports: { "./config": "./config.json" } },
-      "node_modules/preset/config.json": { cli: { format: { options: { semi: true, singleQuote: false } } } },
+      "node_modules/preset/package.json": {
+        name: "preset",
+        exports: { "./config": "./config.json" },
+      },
+      "node_modules/preset/config.json": {
+        cli: { format: { options: { semi: true, singleQuote: false } } },
+      },
       "second.json": { cli: { format: { options: { semi: false } } } },
       "jsconfig.json": { extends: ["preset/config", "./second.json"] },
     });
     try {
-      assert.deepEqual(loadProjectConfig(cwd).config.cli.format.options, { semi: false, singleQuote: false });
+      assert.deepEqual(loadProjectConfig(cwd).config.cli.format.options, {
+        semi: false,
+        singleQuote: false,
+      });
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
@@ -79,7 +97,10 @@ suite("CLI configuration", async () => {
 
   await test("resolves inherited file patterns relative to their config and excludes dependencies", () => {
     const cwd = fixture({
-      "preset/base.json": { include: ["src/**/*.js"], exclude: ["src/ignored/**"] },
+      "preset/base.json": {
+        include: ["src/**/*.js"],
+        exclude: ["src/ignored/**"],
+      },
       "tsconfig.json": { extends: "./preset/base.json" },
       "preset/src/main.js": "export {};",
       "preset/src/ignored/skip.js": "export {};",
@@ -98,7 +119,10 @@ suite("CLI configuration", async () => {
       validate: { dependsOn: ["lint", "test"], script: "finish" },
       test: { dependsOn: ["lint"], script: "unit" },
     };
-    const plan = planTasks("validate", tasks, { unit: "node unit.js", finish: "node finish.js" });
+    const plan = planTasks("validate", tasks, {
+      unit: "node unit.js",
+      finish: "node finish.js",
+    });
     assert.deepEqual(
       plan.map((task) => task.name),
       ["lint", "test", "validate"],
@@ -246,7 +270,10 @@ suite("CLI tool adapters", async () => {
           lint: {
             languageOptions: {
               parser: "@babel/eslint-parser",
-              parserOptions: { requireConfigFile: false, babelOptions: { parserOpts: { plugins: ["jsx"] } } },
+              parserOptions: {
+                requireConfigFile: false,
+                babelOptions: { parserOpts: { plugins: ["jsx"] } },
+              },
             },
           },
         },
@@ -320,8 +347,20 @@ suite("CLI tool adapters", async () => {
       const project = loadProjectConfig(cwd);
       assert.equal(await runChecks(["format"], project, { cwd }), 0);
       writeFileSync(join(cwd, "child/src/main.js"), "export const child=1;");
-      assert.equal(await runChecks(["format"], project, { cwd, patterns: ["src/**/*.js"] }), 0);
-      assert.equal(await runChecks(["format"], project, { cwd, patterns: ["child/src/**/*.js"] }), 1);
+      assert.equal(
+        await runChecks(["format"], project, {
+          cwd,
+          patterns: ["src/**/*.js"],
+        }),
+        0,
+      );
+      assert.equal(
+        await runChecks(["format"], project, {
+          cwd,
+          patterns: ["child/src/**/*.js"],
+        }),
+        1,
+      );
       assert.equal(await runChecks(["format"], project, { cwd, fix: true }), 0);
       assert.equal(readFileSync(join(cwd, "child/src/main.js"), "utf8"), "export const child = 1");
       assert.equal(readFileSync(join(cwd, "child/src/ignored/main.js"), "utf8"), "const ignored=1");
@@ -336,7 +375,12 @@ suite("CLI tool adapters", async () => {
       "tsconfig.json": {
         include: ["**/*.js"],
         exclude: ["**/dist/**", "**/appdata/**"],
-        compilerOptions: { allowJs: true, checkJs: true, types: [], target: "ES2022" },
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          types: [],
+          target: "ES2022",
+        },
       },
       "main.js": "export const root = 1;\n",
       "child/jsconfig.json": {
@@ -390,7 +434,10 @@ suite("CLI tool adapters", async () => {
   await test("does not use project configs or select inherited files above the working directory", async () => {
     const parent = fixture({
       "tsconfig.json": { cli: { format: { options: { semi: false } } } },
-      "preset.json": { include: ["outside.js"], cli: { format: { options: { semi: true } } } },
+      "preset.json": {
+        include: ["outside.js"],
+        cli: { format: { options: { semi: true } } },
+      },
       "outside.js": "const outside=1",
       "project/main.js": "export const value = 1;\n",
     });
@@ -400,7 +447,14 @@ suite("CLI tool adapters", async () => {
       assert.equal(await runChecks(["format"], loadProjectConfig(cwd), { cwd }), 0);
       writeFileSync(join(cwd, "tsconfig.json"), JSON.stringify({ extends: "../preset.json" }));
       assert.equal(await runChecks(["format"], loadProjectConfig(cwd), { cwd, fix: true }), 0);
-      assert.equal(await runChecks(["format"], loadProjectConfig(cwd), { cwd, patterns: ["../outside.js"], fix: true }), 0);
+      assert.equal(
+        await runChecks(["format"], loadProjectConfig(cwd), {
+          cwd,
+          patterns: ["../outside.js"],
+          fix: true,
+        }),
+        0,
+      );
       assert.equal(readFileSync(join(parent, "outside.js"), "utf8"), "const outside=1");
     } finally {
       rmSync(parent, { recursive: true, force: true });
@@ -412,7 +466,13 @@ suite("CLI tool adapters", async () => {
       "package.json": { name: "fixture", type: "module" },
       "tsconfig.json": {
         include: ["src/*.js"],
-        compilerOptions: { allowJs: true, checkJs: true, noEmit: true, types: [], target: "ES2022" },
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          noEmit: true,
+          types: [],
+          target: "ES2022",
+        },
         cli: { lint: { rules: { "no-unused-vars": "error" } } },
       },
       "src/main.js": "export const value = 1;\n",
@@ -422,12 +482,96 @@ suite("CLI tool adapters", async () => {
         const bundled = await import(pathToFileURL(createRequire(import.meta.url).resolve(name)).href);
         assert.equal(await projectTool(name, cwd), bundled.default || bundled);
       }
-      assert.equal(await runChecks(["format", "lint", "types"], loadProjectConfig(cwd), { cwd }), 0);
+      assert.equal(
+        await runChecks(["format", "lint", "types"], loadProjectConfig(cwd), {
+          cwd,
+        }),
+        0,
+      );
       const check = spawnSync(process.execPath, [fileURLToPath(new URL("../bin.js", import.meta.url)), "check"], {
         cwd,
         encoding: "utf8",
       });
       assert.equal(check.status, 0, check.stdout + check.stderr);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  await test("uses bundled Node types instead of undeclared transitive types with and without a config", async () => {
+    const cwd = fixture({
+      "package.json": { type: "module" },
+      "tsconfig.json": {
+        include: ["main.js"],
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          types: ["node", "fixture"],
+          target: "ESNext",
+          module: "NodeNext",
+          moduleResolution: "NodeNext",
+          skipLibCheck: true,
+        },
+      },
+      "main.js": 'import { randomUUID } from "node:crypto";\nexport const value = randomUUID() + fixtureValue;\n',
+      "node_modules/@types/node/package.json": {
+        name: "@types/node",
+        version: "10.0.0",
+        types: "index.d.ts",
+      },
+      "node_modules/@types/node/index.d.ts": "declare const obsoleteNodeTypes: true;\n",
+      "node_modules/@types/fixture/index.d.ts": "declare const fixtureValue: string;\n",
+    });
+    try {
+      assert.equal(await runChecks(["types"], loadProjectConfig(cwd), { cwd }), 0);
+      rmSync(join(cwd, "tsconfig.json"));
+      writeFileSync(join(cwd, "main.js"), 'import { randomUUID } from "node:crypto";\nexport const value = randomUUID();\n');
+      assert.equal(await runChecks(["types"], loadProjectConfig(cwd), { cwd }), 0);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  await test("honors directly declared Node types and explicit type roots", async () => {
+    const cwd = fixture({
+      "package.json": {
+        type: "module",
+        devDependencies: { "@types/node": "10.0.0" },
+      },
+      "tsconfig.json": {
+        include: ["main.js"],
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          types: ["node"],
+          target: "ESNext",
+        },
+      },
+      "main.js": "export const value = projectNodeTypes;\n",
+      "node_modules/@types/node/package.json": {
+        name: "@types/node",
+        version: "10.0.0",
+        types: "index.d.ts",
+      },
+      "node_modules/@types/node/index.d.ts": "declare const projectNodeTypes: string;\n",
+      "custom-types/node/index.d.ts": "declare const customNodeTypes: string;\n",
+    });
+    try {
+      assert.equal(await runChecks(["types"], loadProjectConfig(cwd), { cwd }), 0);
+      writeFileSync(
+        join(cwd, "tsconfig.json"),
+        JSON.stringify({
+          include: ["main.js"],
+          compilerOptions: {
+            allowJs: true,
+            checkJs: true,
+            types: ["node"],
+            typeRoots: ["./custom-types"],
+          },
+        }),
+      );
+      writeFileSync(join(cwd, "main.js"), "export const value = customNodeTypes;\n");
+      assert.equal(await runChecks(["types"], loadProjectConfig(cwd), { cwd }), 0);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
@@ -505,14 +649,20 @@ suite("CLI tool adapters", async () => {
       "node_modules/prettier/index.cjs": 'module.exports = { version: "project-prettier" };',
       "node_modules/eslint/package.json": { main: "index.cjs" },
       "node_modules/eslint/index.cjs": 'throw new Error("Broken project ESLint");',
-      "node_modules/typescript/package.json": { exports: { "./internal": "./index.cjs" } },
+      "node_modules/typescript/package.json": {
+        exports: { "./internal": "./index.cjs" },
+      },
       "broken/node_modules/prettier/package.json": { main: "missing.cjs" },
     });
     try {
       assert.equal((await projectTool("prettier", cwd)).version, "project-prettier");
       await assert.rejects(projectTool("eslint", cwd), /Broken project ESLint/);
-      await assert.rejects(projectTool("typescript", cwd), { code: "ERR_PACKAGE_PATH_NOT_EXPORTED" });
-      await assert.rejects(projectTool("prettier", join(cwd, "broken")), { code: "MODULE_NOT_FOUND" });
+      await assert.rejects(projectTool("typescript", cwd), {
+        code: "ERR_PACKAGE_PATH_NOT_EXPORTED",
+      });
+      await assert.rejects(projectTool("prettier", join(cwd, "broken")), {
+        code: "MODULE_NOT_FOUND",
+      });
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
@@ -524,22 +674,38 @@ suite("CLI tool adapters", async () => {
       "package.json": { name: "fixture", type: "module" },
       "tsconfig.json": {
         include: ["src/*.js"],
-        compilerOptions: { allowJs: true, checkJs: true, noEmit: true, types: [], target: "ES2022" },
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          noEmit: true,
+          types: [],
+          target: "ES2022",
+        },
         cli: {
           lint: {
             engine: "eslint",
             config: "./eslint.config.mjs",
             rules: { "no-unused-vars": "error", semi: ["error", "always"] },
           },
-          format: { engine: "prettier", config: "./prettier.config.mjs", options: { semi: true, singleQuote: false } },
+          format: {
+            engine: "prettier",
+            config: "./prettier.config.mjs",
+            options: { semi: true, singleQuote: false },
+          },
         },
       },
       "src/main.js": "export const value=1",
       "eslint.config.mjs": 'export default [{ rules: { semi: ["error", "never"] } }];',
       "prettier.config.mjs": "export default { semi: false };",
-      "node_modules/eslint/package.json": { main: join(root, "node_modules/eslint/lib/api.js") },
-      "node_modules/prettier/package.json": { main: join(root, "node_modules/prettier/index.cjs") },
-      "node_modules/typescript/package.json": { main: join(root, "node_modules/typescript/lib/typescript.js") },
+      "node_modules/eslint/package.json": {
+        main: join(root, "node_modules/eslint/lib/api.js"),
+      },
+      "node_modules/prettier/package.json": {
+        main: join(root, "node_modules/prettier/index.cjs"),
+      },
+      "node_modules/typescript/package.json": {
+        main: join(root, "node_modules/typescript/lib/typescript.js"),
+      },
     });
     try {
       const project = loadProjectConfig(cwd);
@@ -560,7 +726,10 @@ suite("CLI tool adapters", async () => {
 suite("CLI public commands", async () => {
   await test("loads Node types when checking the CLI without workspace inheritance", () => {
     const bin = fileURLToPath(new URL("../bin.js", import.meta.url));
-    const checked = spawnSync(process.execPath, [bin, "types"], { cwd: dirname(bin), encoding: "utf8" });
+    const checked = spawnSync(process.execPath, [bin, "types"], {
+      cwd: dirname(bin),
+      encoding: "utf8",
+    });
     assert.equal(checked.status, 0, checked.stdout + checked.stderr);
     assert.match(checked.stdout + checked.stderr, /Checks: 1\/1 passed/);
   });
@@ -570,7 +739,13 @@ suite("CLI public commands", async () => {
     const cwd = fixture({
       "tsconfig.json": {
         include: ["preset/**/*.js"],
-        compilerOptions: { allowJs: true, checkJs: true, types: [], target: "ES2022", skipLibCheck: false },
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          types: [],
+          target: "ES2022",
+          skipLibCheck: false,
+        },
       },
       "preset/main.js": "export const preset = 1;\n",
       "child/tsconfig.json": { extends: "../tsconfig.json" },
@@ -585,7 +760,10 @@ suite("CLI public commands", async () => {
       assert.match(empty.stdout + empty.stderr, /Set include or files/);
       assert.doesNotMatch(empty.stdout + empty.stderr, /types \(child\): passed/);
       assert.match(empty.stdout + empty.stderr, /Checks: 1\/2 passed/);
-      const standalone = spawnSync(process.execPath, [bin, "types"], { cwd: join(cwd, "child"), encoding: "utf8" });
+      const standalone = spawnSync(process.execPath, [bin, "types"], {
+        cwd: join(cwd, "child"),
+        encoding: "utf8",
+      });
       assert.equal(standalone.status, 1, standalone.stdout + standalone.stderr);
       assert.match(standalone.stdout + standalone.stderr, /No type-check inputs belong to/);
       writeFileSync(join(cwd, "child/tsconfig.json"), JSON.stringify({ include: ["./**/*.js", "./**/*.d.ts"] }));
@@ -604,7 +782,12 @@ suite("CLI public commands", async () => {
     const cwd = fixture({
       "tsconfig.json": {
         include: ["**/*.js"],
-        compilerOptions: { allowJs: true, checkJs: true, types: [], target: "ES2022" },
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          types: [],
+          target: "ES2022",
+        },
       },
       "child/tsconfig.json": { include: ["./*.js"] },
       "child/main.js": "export const child = 1;\n",
@@ -621,7 +804,12 @@ suite("CLI public commands", async () => {
         JSON.stringify({
           files: [],
           references: [{ path: "./child" }],
-          compilerOptions: { allowJs: true, checkJs: true, types: [], target: "ES2022" },
+          compilerOptions: {
+            allowJs: true,
+            checkJs: true,
+            types: [],
+            target: "ES2022",
+          },
         }),
       );
       writeFileSync(join(cwd, "child/tsconfig.json"), JSON.stringify({ files: ["./main.js"], references: [] }));
@@ -644,7 +832,12 @@ suite("CLI public commands", async () => {
       "tsconfig.json": {
         include: ["**/*.js"],
         exclude: ["**/playground/**"],
-        compilerOptions: { allowJs: true, checkJs: true, types: [], target: "ES2022" },
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          types: [],
+          target: "ES2022",
+        },
         cli: { lint: { rules: { "no-unused-vars": "error" } } },
       },
       "main.js": "export const root = 1;\n",
@@ -652,7 +845,10 @@ suite("CLI public commands", async () => {
       "playground/main.js": "invalid javascript !!!",
     });
     try {
-      const checked = spawnSync(process.execPath, [bin, "check"], { cwd, encoding: "utf8" });
+      const checked = spawnSync(process.execPath, [bin, "check"], {
+        cwd,
+        encoding: "utf8",
+      });
       assert.equal(checked.status, 0, checked.stdout + checked.stderr);
       assert.match(checked.stdout + checked.stderr, /Checks: 3\/3 passed/);
       assert.doesNotMatch(checked.stdout + checked.stderr, /playground/);
@@ -667,7 +863,12 @@ suite("CLI public commands", async () => {
       "tsconfig.json": {
         include: ["**/*.js"],
         exclude: ["**/dist/**"],
-        compilerOptions: { allowJs: true, checkJs: true, types: [], target: "ES2022" },
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          types: [],
+          target: "ES2022",
+        },
       },
       "main.js": "export const root = 1;\n",
       "child/tsconfig.json": { exclude: [] },
@@ -694,17 +895,27 @@ suite("CLI public commands", async () => {
     const cwd = fixture({
       "tsconfig.json": {
         include: ["**/*.js"],
-        compilerOptions: { allowJs: true, checkJs: true, types: [], target: "ES2022" },
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          types: [],
+          target: "ES2022",
+        },
       },
       "node_modules/typescript/package.json": { main: "index.cjs" },
       "node_modules/typescript/index.cjs":
         'module.exports = { sys: {}, convertCompilerOptionsFromJson() { throw new Error("Broken TypeScript fixture"); } };',
       "child/tsconfig.json": {},
-      "child/node_modules/typescript/package.json": { main: join(root, "node_modules/typescript/lib/typescript.js") },
+      "child/node_modules/typescript/package.json": {
+        main: join(root, "node_modules/typescript/lib/typescript.js"),
+      },
       "child/main.js": "export const value = 1;\n",
     });
     try {
-      const checked = spawnSync(process.execPath, [bin, "types"], { cwd, encoding: "utf8" });
+      const checked = spawnSync(process.execPath, [bin, "types"], {
+        cwd,
+        encoding: "utf8",
+      });
       assert.equal(checked.status, 1, checked.stdout + checked.stderr);
       assert.match(checked.stdout + checked.stderr, /Broken TypeScript fixture/);
       assert.match(checked.stdout + checked.stderr, /types \(child\): passed/);
@@ -723,7 +934,10 @@ suite("CLI public commands", async () => {
       "main.js": "export const root=1",
       "child/tsconfig.json": {
         include: ["**/*.js"],
-        cli: { check: { format: true, lint: false, types: false }, format: { options: { semi: false } } },
+        cli: {
+          check: { format: true, lint: false, types: false },
+          format: { options: { semi: false } },
+        },
       },
       "child/main.js": "export const child=1;",
     });
@@ -748,7 +962,11 @@ suite("CLI public commands", async () => {
     const cwd = fixture({
       "package.json": {
         name: "fixture",
-        scripts: { smoke: "node success.js", fail: "node failure.js", args: "node arguments.js" },
+        scripts: {
+          smoke: "node success.js",
+          fail: "node failure.js",
+          args: "node arguments.js",
+        },
       },
       "tsconfig.json": {
         files: ["main.js"],
@@ -762,7 +980,9 @@ suite("CLI public commands", async () => {
       "success.js": "process.exit(0);",
       "failure.js": "process.exit(7);",
       "arguments.js": 'if (process.argv[2] !== "--help") process.exit(3); console.log("FORWARDED");',
-      "node_modules/prettier/package.json": { main: join(root, "node_modules/prettier/index.cjs") },
+      "node_modules/prettier/package.json": {
+        main: join(root, "node_modules/prettier/index.cjs"),
+      },
     });
     const invoke = (...args) => spawnSync(process.execPath, [bin, ...args], { cwd, encoding: "utf8" });
     try {

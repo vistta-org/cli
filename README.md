@@ -180,12 +180,14 @@ vistta run validate
   skipped declaration-library checks, without strict mode or file emission.
   It scans JavaScript and TypeScript sources below the working directory,
   excluding `node_modules`, `.git`, `dist`, `build`, and `coverage` directories.
-  Node type definitions are resolved from the project first, then the CLI's
-  bundled dependency. CLI runtime/test globals (`suite`, `test`, and `expect`)
-  are included automatically.
+  CLI runtime/test globals (`suite`, `test`, and `expect`) are included automatically.
   Missing inputs and type errors fail the check rather than silently passing.
   An existing config retains its compiler settings; defaults are not added to it.
   To disable type checking in `check`, set `cli.check.types` to `false` in a config.
+- Node type definitions use the project's directly declared `@types/node`,
+  or the CLI's bundled dependency when undeclared. Transitive Node types do not
+  override the CLI's version. Explicit `compilerOptions.typeRoots` are honored,
+  and other type packages retain normal TypeScript resolution.
 - Tools are resolved from the current project first, falling back to the
   CLI-bundled versions when absent. Commands never download tools at runtime.
   Broken project installations report their errors instead of silently falling

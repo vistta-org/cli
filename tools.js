@@ -140,7 +140,9 @@ async function lint(project, selected, fix, cwd) {
             {
               files: ["**/*.{js,jsx,mjs,cjs}"],
               ...recommended,
-              languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } },
+              languageOptions: {
+                parserOptions: { ecmaFeatures: { jsx: true } },
+              },
               plugins: {
                 vistta: {
                   rules: {
@@ -226,17 +228,17 @@ export async function checkTypes(entry, directories) {
   const { project, cwd } = entry;
   const ts = await projectTool("typescript", cwd);
   const diagnostics = [];
-  const host = { ...ts.sys, onUnRecoverableConfigFileDiagnostic: (error) => diagnostics.push(error) };
+  const host = {
+    ...ts.sys,
+    onUnRecoverableConfigFileDiagnostic: (error) => diagnostics.push(error),
+  };
   const defaults = project.file
     ? {}
     : loadProjectConfig(fileURLToPath(new URL(".", import.meta.url))).config.compilerOptions;
   const convertedDefaults = ts.convertCompilerOptionsFromJson(defaults, cwd, project.file);
   diagnostics.push(...convertedDefaults.errors);
   const options = convertedDefaults.options;
-  if (!project.file) {
-    options.types = ["node"];
-    options.typeRoots = [dirname(dirname(projectToolPath("@types/node/package.json", cwd)))];
-  }
+  if (!project.file) options.types = ["node"];
   for (const [name, value] of Object.entries(project.config.compilerOptions || {})) {
     const key = `compilerOptions.${name}`;
     const source =
@@ -255,7 +257,10 @@ export async function checkTypes(entry, directories) {
   }
   const config = project.file
     ? { ...project.config }
-    : { ...project.config, exclude: ["**/node_modules", "**/.git", "**/dist", "**/build", "**/coverage"] };
+    : {
+        ...project.config,
+        exclude: ["**/node_modules", "**/.git", "**/dist", "**/build", "**/coverage"],
+      };
   delete config.compilerOptions;
   for (const name of ["include", "exclude", "files"]) {
     if (config[name]) {
@@ -288,11 +293,41 @@ export async function checkTypes(entry, directories) {
         skipped = true;
       }
       warnReincluded(files, entry, "types");
+      const compilerHost = ts.createCompilerHost(parsed.options);
+      if (parsed.options.typeRoots === undefined) {
+        const manifest = resolve(cwd, "package.json");
+        const packageJson = existsSync(manifest) ? JSON.parse(readFileSync(manifest, "utf8")) : {};
+        const declared = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"].some((section) =>
+          Object.hasOwn(packageJson[section] || {}, "@types/node"),
+        );
+        const require = declared ? createRequire(manifest) : createRequire(import.meta.url);
+        const nodeTypeRoot = dirname(dirname(require.resolve("@types/node/package.json")));
+        compilerHost.resolveTypeReferenceDirectiveReferences = (
+          references,
+          containingFile,
+          redirectedReference,
+          options,
+          containingSourceFile,
+        ) =>
+          references.map((reference) => {
+            const name = typeof reference === "string" ? reference : reference.fileName;
+            return ts.resolveTypeReferenceDirective(
+              name,
+              containingFile,
+              name === "node" ? { ...options, typeRoots: [nodeTypeRoot] } : options,
+              compilerHost,
+              redirectedReference,
+              undefined,
+              ts.getModeForFileReference(reference, containingSourceFile?.impliedNodeFormat),
+            );
+          });
+      }
       const program = ts.createProgram({
         rootNames:
           !project.file && files.length ? [...files, fileURLToPath(new URL("./global.d.ts", import.meta.url))] : files,
         options: parsed.options,
         projectReferences: parsed.projectReferences,
+        host: compilerHost,
       });
       diagnostics.push(...ts.getPreEmitDiagnostics(program));
     }
@@ -404,7 +439,11 @@ export function planTasks(name, tasks = {}, scripts = {}, commands = ["check", "
 
 export function executeNode(args, cwd) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, args, { cwd, stdio: "inherit", windowsHide: true });
+    const child = spawn(process.execPath, args, {
+      cwd,
+      stdio: "inherit",
+      windowsHide: true,
+    });
     const stop = () => child.kill("SIGINT");
     process.on("SIGINT", stop);
     child.on("error", (error) => {
